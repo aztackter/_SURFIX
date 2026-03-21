@@ -2,616 +2,726 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SURFIX - Commercial Lua Obfuscator</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SURFIX | Enterprise Lua Protection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+
     body {
-      background: #060810;
-      font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-      color: #dde4f0;
-      min-height: 100vh;
+      background: #05070c;
+      font-family: 'Inter', sans-serif;
+      color: #eef2ff;
+      line-height: 1.5;
+      overflow-x: hidden;
     }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2rem;
+
+    /* Animated gradient orbs */
+    .bg-orb {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -2;
+      pointer-events: none;
     }
-    .header {
-      text-align: center;
-      padding: 3rem 0;
-      border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.4;
+      animation: float 20s infinite ease-in-out;
     }
-    .logo {
-      font-size: 4rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #00e5ff, #9b59ff);
+    .orb-1 {
+      width: 500px;
+      height: 500px;
+      background: #6366f1;
+      top: -200px;
+      left: -200px;
+    }
+    .orb-2 {
+      width: 600px;
+      height: 600px;
+      background: #06b6d4;
+      bottom: -300px;
+      right: -200px;
+      animation-delay: -5s;
+    }
+    .orb-3 {
+      width: 400px;
+      height: 400px;
+      background: #a855f7;
+      top: 40%;
+      left: 60%;
+      animation-delay: -10s;
+      opacity: 0.3;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* Glassmorphism */
+    .glass {
+      background: rgba(10, 12, 18, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 24px;
+    }
+    .glass-card {
+      background: rgba(15, 18, 28, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* Typography */
+    .gradient-text {
+      background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      letter-spacing: -0.02em;
     }
-    .tagline {
-      font-size: 1.2rem;
-      color: #4a5878;
-      margin-top: 0.5rem;
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
     }
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-top: 3rem;
-    }
-    .panel {
-      background: rgba(11, 14, 24, 0.8);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(0, 229, 255, 0.2);
-      border-radius: 16px;
-      padding: 1.5rem;
-    }
-    .panel h2 {
-      margin-bottom: 1rem;
-      color: #00e5ff;
-      font-size: 1.3rem;
-    }
-    textarea {
-      width: 100%;
-      background: #0b0e18;
-      border: 1px solid #1c2336;
-      color: #dde4f0;
-      padding: 1rem;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.85rem;
-      border-radius: 8px;
-      resize: vertical;
-    }
-    select, input {
-      background: #0b0e18;
-      border: 1px solid #1c2336;
-      color: #dde4f0;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
-    button {
-      background: linear-gradient(135deg, #00e5ff, #0099ff);
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
       border: none;
-      color: #060810;
-      font-weight: bold;
+      color: white;
+      font-weight: 600;
       padding: 0.75rem 1.5rem;
-      border-radius: 8px;
+      border-radius: 40px;
       cursor: pointer;
-      font-size: 1rem;
-      transition: transform 0.2s, opacity 0.2s;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
     }
-    button:hover {
-      transform: translateY(-2px);
-      opacity: 0.9;
+    .btn-primary:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
     }
     .btn-secondary {
-      background: linear-gradient(135deg, #9b59ff, #6600ff);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #eef2ff;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .metrics {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: #0b0e18;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-family: monospace;
+    .btn-secondary:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: #818cf8;
     }
-    .loader-url {
-      background: #0b0e18;
-      padding: 0.75rem;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 0.75rem;
-      word-break: break-all;
-      margin: 0.5rem 0;
-    }
-    .nav {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin-top: 2rem;
-    }
-    .nav-btn {
+    .btn-outline {
       background: transparent;
-      border: 1px solid #00e5ff;
-      color: #00e5ff;
-      padding: 0.5rem 1.5rem;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      color: #eef2ff;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
     }
-    .hidden {
+    .btn-outline:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: #818cf8;
+    }
+
+    /* Navigation */
+    .nav-link {
+      color: #9ca3af;
+      transition: color 0.2s;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .nav-link:hover {
+      color: #eef2ff;
+    }
+
+    /* Terminal/Code block */
+    .terminal {
+      background: #0a0c14;
+      border: 1px solid #2d2f3e;
+      border-radius: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+
+    /* Metrics cards */
+    .metric-card {
+      background: rgba(10, 12, 18, 0.6);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 20px;
+      padding: 1rem;
+      transition: all 0.2s;
+    }
+    .metric-card:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f111a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2d2f3e;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4f46e5;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-in {
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
       display: none;
+      align-items: center;
+      justify-content: center;
     }
-    .success {
-      color: #00e5a0;
+    .modal-overlay.open {
+      display: flex;
     }
-    .error {
-      color: #ff3d5a;
+    .modal-content {
+      background: #0f111a;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 28px;
+      padding: 2rem;
+      max-width: 550px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
     }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #818cf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-      .logo {
-        font-size: 2.5rem;
-      }
+      .glass-card { padding: 1rem; }
+      .btn-primary, .btn-secondary { padding: 0.6rem 1.2rem; font-size: 0.85rem; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">SURFIX</div>
-      <div class="tagline">Commercial-Grade Lua Obfuscator • 7-Layer Protection • License Management</div>
-    </div>
 
-    <div class="nav">
-      <button class="nav-btn" onclick="showObfuscator()">Obfuscator</button>
-      <button class="nav-btn" onclick="showLogin()">Admin Login</button>
-    </div>
+<div class="bg-orb">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
 
-    <div id="obfuscatorPanel" class="main-grid">
-      <div class="panel">
-        <h2>📝 Input Script</h2>
-        <textarea id="inputScript" rows="12" placeholder="-- Paste your Lua script here&#10;print('Hello World')&#10;local x = 100&#10;for i = 1, 10 do&#10;  x = x + i&#10;end"></textarea>
-        <div style="margin-top: 1rem;">
-          <label>Protection Level:</label>
-          <select id="protectionLevel">
-            <option value="light">Light (XOR + Integrity)</option>
-            <option value="medium">Medium (+ String Table)</option>
-            <option value="max" selected>Maximum (+ VM + Anti-Tamper + Flattening)</option>
-          </select>
-          <label style="margin-left: 1rem;"><input type="checkbox" id="lightning"> Lightning Mode</label>
-          <label style="margin-left: 1rem;"><input type="checkbox" id="silent"> Silent Mode</label>
-        </div>
-        <button onclick="obfuscate()" style="margin-top: 1rem; width: 100%;">⚡ OBFUSCATE SCRIPT</button>
+<!-- Login Screen -->
+<div id="loginScreen" class="modal-overlay open" style="display: flex;">
+  <div class="modal-content" style="max-width: 400px; text-align: center;">
+    <div style="margin-bottom: 1.5rem;">
+      <img src="https://i.ibb.co/cVSLcpf/47B3C155-3322-44F1-BD7B-3D6446CF7A1F.png" alt="SURFIX Logo" style="height: 60px; margin-bottom: 1rem;">
+      <h1 class="text-3xl font-bold"><span class="gradient-text">SURFIX</span></h1>
+      <p class="text-gray-400 mt-2 mono text-sm">ENTERPRISE LUA PROTECTION</p>
+    </div>
+    <input type="text" id="loginUsername" placeholder="Username" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-3 text-white mb-3 focus:outline-none focus:border-purple-500">
+    <input type="password" id="loginPassword" placeholder="Password" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-3 text-white mb-4 focus:outline-none focus:border-purple-500">
+    <button onclick="adminLogin()" class="btn-primary w-full">Access Dashboard →</button>
+    <div id="loginError" class="text-red-400 text-sm mt-3 hidden"></div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display: none;">
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass py-3 px-6 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <img src="https://i.ibb.co/cVSLcpf/47B3C155-3322-44F1-BD7B-3D6446CF7A1F.png" alt="Logo" style="height: 35px;">
+      <span class="font-bold text-xl"><span class="gradient-text">SURFIX</span></span>
+      <span class="mono text-xs text-gray-500 ml-2 hidden md:inline">v4.1</span>
+    </div>
+    <div class="flex gap-6 items-center">
+      <div class="hidden md:flex gap-6">
+        <span class="nav-link" onclick="showPage('dashboard')">Dashboard</span>
+        <span class="nav-link" onclick="showPage('projects')">Projects</span>
+        <span class="nav-link" onclick="showPage('keys')">Keys</span>
+        <span class="nav-link" onclick="showPage('logs')">Logs</span>
+        <span class="nav-link" onclick="showPage('sessions')">Sessions</span>
+        <span class="nav-link" onclick="showPage('verify')">Verify</span>
       </div>
-
-      <div class="panel">
-        <h2>🔒 Protected Output</h2>
-        <textarea id="outputScript" rows="12" readonly placeholder="Obfuscated code will appear here..."></textarea>
-        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-          <button onclick="copyOutput()" style="flex: 1;">📋 Copy</button>
-          <button onclick="downloadOutput()" style="flex: 1;">💾 Download</button>
-        </div>
-        <div id="metrics" class="metrics hidden"></div>
-      </div>
+      <button onclick="logout()" class="btn-outline text-sm"><i class="fas fa-sign-out-alt mr-1"></i> Exit</button>
     </div>
+  </nav>
 
-    <div id="loginPanel" class="hidden" style="max-width: 400px; margin: 3rem auto;">
-      <div class="panel">
-        <h2>🔐 Admin Login</h2>
-        <input type="text" id="loginUsername" placeholder="Username" style="width: 100%; margin-bottom: 1rem;">
-        <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; margin-bottom: 1rem;">
-        <button onclick="adminLogin()" style="width: 100%;">Login</button>
-        <div id="loginError" class="error" style="margin-top: 1rem; text-align: center;"></div>
+  <div class="container mx-auto px-4 pt-24 pb-12">
+    <!-- Dashboard Page -->
+    <div id="page-dashboard" class="page active">
+      <div class="text-center mb-10 animate-in">
+        <h1 class="text-4xl md:text-5xl font-bold"><span class="gradient-text">Control Panel</span></h1>
+        <p class="text-gray-400 mt-3 mono">Real-time protection metrics & analytics</p>
       </div>
-    </div>
-
-    <div id="dashboardPanel" class="hidden">
-      <div class="panel">
-        <h2>📊 Dashboard</h2>
-        <div id="stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;"></div>
-        
-        <h2>📁 Projects</h2>
-        <button onclick="showCreateProject()" style="margin-bottom: 1rem;">+ New Project</button>
-        <div id="projectsList"></div>
-        
-        <div id="projectModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-          <div class="panel" style="width: 600px; max-width: 90%;">
-            <h2 id="modalTitle">New Project</h2>
-            <input type="hidden" id="editProjectId">
-            <input type="text" id="projectName" placeholder="Project Name" style="width: 100%; margin-bottom: 1rem;">
-            <input type="text" id="projectVersion" placeholder="Version" value="1.0.0" style="width: 100%; margin-bottom: 1rem;">
-            <select id="projectProtection" style="width: 100%; margin-bottom: 1rem;">
-              <option value="light">Light</option>
-              <option value="medium">Medium</option>
-              <option value="max" selected>Maximum</option>
-            </select>
-            <label><input type="checkbox" id="projectLightning"> Lightning Mode</label>
-            <label><input type="checkbox" id="projectSilent"> Silent Mode</label>
-            <label><input type="checkbox" id="projectFFA"> FFA Mode (No Key Required)</label>
-            <label><input type="checkbox" id="projectHeartbeat"> Heartbeat (max concurrent sessions)</label>
-            <input type="number" id="heartbeatLimit" placeholder="Max instances" style="width: 100%; margin: 0.5rem 0;">
-            <label><input type="checkbox" id="projectSourceLocker"> Source Locker (AES-256 encrypt script)</label>
-            <textarea id="projectScript" rows="8" placeholder="Lua script source code..." style="width: 100%; margin-bottom: 1rem;"></textarea>
-            <div style="display: flex; gap: 0.5rem;">
-              <button onclick="saveProject()" style="flex: 1;">Save</button>
-              <button onclick="closeModal()" class="btn-secondary" style="flex: 1;">Cancel</button>
-            </div>
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="statsGrid"></div>
+      <div class="glass-card p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold"><i class="fas fa-history mr-2 text-purple-400"></i> Recent Activity</h2>
+          <button onclick="loadDashboard()" class="btn-outline text-xs"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
         </div>
-        
-        <div id="keysModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-          <div class="panel" style="width: 500px; max-width: 90%;">
-            <h2>Generate License Keys</h2>
-            <input type="hidden" id="keysProjectId">
-            <input type="number" id="keyCount" placeholder="Number of keys" value="1" style="width: 100%; margin-bottom: 1rem;">
-            <input type="number" id="keyExpiry" placeholder="Expires in days (optional)" style="width: 100%; margin-bottom: 1rem;">
-            <input type="number" id="keyMaxUses" placeholder="Max uses (optional)" style="width: 100%; margin-bottom: 1rem;">
-            <input type="number" id="keyDays" placeholder="Key days after activation" style="width: 100%; margin-bottom: 1rem;">
-            <input type="number" id="authExpire" placeholder="Auth expire in days" style="width: 100%; margin-bottom: 1rem;">
-            <input type="text" id="keyNote" placeholder="Note (optional)" style="width: 100%; margin-bottom: 1rem;">
-            <input type="text" id="discordId" placeholder="Discord ID (optional)" style="width: 100%; margin-bottom: 1rem;">
-            <button onclick="generateKeys()" style="width: 100%;">Generate</button>
-            <button onclick="closeKeysModal()" class="btn-secondary" style="width: 100%; margin-top: 0.5rem;">Cancel</button>
-            <div id="keysResult" style="margin-top: 1rem;"></div>
-          </div>
-        </div>
-        
-        <div id="verifyModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-          <div class="panel" style="width: 600px; max-width: 90%;">
-            <h2>Verify Scripts</h2>
-            <div id="verifyList"></div>
-            <button onclick="closeVerifyModal()" class="btn-secondary">Close</button>
-          </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-gray-500 border-b border-gray-700">
+              <tr><th class="text-left py-2">Time</th><th class="text-left">Project</th><th class="text-left">Key</th><th class="text-left">Status</th><th class="text-left">Reason</th></tr>
+            </thead>
+            <tbody id="recentLogs"></tbody>
+          </table>
         </div>
       </div>
+    </div>
+
+    <!-- Projects Page -->
+    <div id="page-projects" class="page">
+      <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+        <h1 class="text-3xl font-bold"><span class="gradient-text">Projects</span></h1>
+        <button onclick="openNewProject()" class="btn-primary"><i class="fas fa-plus mr-2"></i> New Project</button>
+      </div>
+      <div id="projectsList" class="space-y-4"></div>
+    </div>
+
+    <!-- Keys Page -->
+    <div id="page-keys" class="page">
+      <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+        <h1 class="text-3xl font-bold"><span class="gradient-text">License Keys</span></h1>
+        <div class="flex gap-2">
+          <select id="keyProjectSelect" class="bg-black/40 border border-purple-500/30 rounded-xl px-3 py-2 text-sm" onchange="loadKeysForProject(this.value)"></select>
+          <button onclick="openGenerateKeys()" class="btn-primary"><i class="fas fa-key mr-2"></i> Generate</button>
+        </div>
+      </div>
+      <div class="glass-card p-5">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-gray-500 border-b border-gray-700">
+              <tr><th>Key</th><th>HWID</th><th>Uses</th><th>Expires</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="keysTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs Page -->
+    <div id="page-logs" class="page">
+      <h1 class="text-3xl font-bold mb-6"><span class="gradient-text">Auth Logs</span></h1>
+      <div class="glass-card p-5">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-gray-500 border-b border-gray-700">
+              <tr><th>Time</th><th>Project</th><th>HWID</th><th>IP</th><th>Status</th><th>Reason</th></tr>
+            </thead>
+            <tbody id="logsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sessions Page -->
+    <div id="page-sessions" class="page">
+      <h1 class="text-3xl font-bold mb-6"><span class="gradient-text">Live Sessions</span></h1>
+      <div class="glass-card p-5">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-gray-500 border-b border-gray-700">
+              <tr><th>Session ID</th><th>License</th><th>IP</th><th>Last Ping</th></tr>
+            </thead>
+            <tbody id="sessionsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verify Page -->
+    <div id="page-verify" class="page">
+      <h1 class="text-3xl font-bold mb-6"><span class="gradient-text">Verification Queue</span></h1>
+      <div id="verifyQueueList" class="space-y-4"></div>
     </div>
   </div>
 
-  <script>
-    let token = localStorage.getItem("surfix_token") || "";
-    let currentProjectId = null;
-    let projects = [];
+  <!-- Footer -->
+  <footer class="text-center py-8 border-t border-gray-800/50 mt-12">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <img src="https://i.ibb.co/cVSLcpf/47B3C155-3322-44F1-BD7B-3D6446CF7A1F.png" alt="Logo" style="height: 28px;">
+          <span class="text-gray-500 text-sm">© 2025 SURFIX</span>
+        </div>
+        <div class="text-gray-500 text-sm mono">
+          Made by <span class="text-purple-400">XZX HUB</span> | Enterprise Grade Protection
+        </div>
+        <div class="flex gap-4">
+          <i class="fab fa-github text-gray-600 hover:text-white cursor-pointer"></i>
+          <i class="fab fa-discord text-gray-600 hover:text-white cursor-pointer"></i>
+          <i class="fab fa-twitter text-gray-600 hover:text-white cursor-pointer"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
 
-    function showObfuscator() {
-      document.getElementById("obfuscatorPanel").classList.remove("hidden");
-      document.getElementById("loginPanel").classList.add("hidden");
-      document.getElementById("dashboardPanel").classList.add("hidden");
-    }
+<!-- Modals -->
+<div id="projectModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="text-2xl font-bold mb-4" id="modalTitle">New Project</h2>
+    <input type="hidden" id="editProjectId">
+    <input type="text" id="projectName" placeholder="Project Name" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-3">
+    <input type="text" id="projectVersion" placeholder="Version" value="1.0.0" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-3">
+    <select id="projectProtection" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-3">
+      <option value="light">Light</option><option value="medium">Medium</option><option value="max" selected>Maximum</option>
+    </select>
+    <div class="flex gap-4 mb-3 flex-wrap">
+      <label><input type="checkbox" id="projectLightning"> ⚡ Lightning</label>
+      <label><input type="checkbox" id="projectSilent"> 🔇 Silent</label>
+      <label><input type="checkbox" id="projectFFA"> 🎯 FFA Mode</label>
+      <label><input type="checkbox" id="projectSourceLocker"> 🔒 Source Locker</label>
+    </div>
+    <textarea id="projectScript" rows="6" placeholder="Lua script source..." class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-4 mono text-sm"></textarea>
+    <div class="flex gap-3">
+      <button onclick="saveProject()" class="btn-primary flex-1">Save Project</button>
+      <button onclick="closeProjectModal()" class="btn-secondary flex-1">Cancel</button>
+    </div>
+  </div>
+</div>
 
-    function showLogin() {
-      document.getElementById("obfuscatorPanel").classList.add("hidden");
-      document.getElementById("loginPanel").classList.remove("hidden");
-      document.getElementById("dashboardPanel").classList.add("hidden");
-    }
+<div id="keysModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="text-2xl font-bold mb-4">Generate Keys</h2>
+    <input type="hidden" id="keysProjectId">
+    <input type="number" id="keyCount" placeholder="Count" value="1" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-3">
+    <input type="number" id="keyExpiry" placeholder="Expires (days)" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-3">
+    <input type="number" id="keyMaxUses" placeholder="Max uses" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-3">
+    <input type="text" id="keyNote" placeholder="Note" class="w-full bg-black/40 border border-purple-500/30 rounded-xl px-4 py-2 mb-4">
+    <div class="flex gap-3">
+      <button onclick="generateKeys()" class="btn-primary flex-1">Generate</button>
+      <button onclick="closeKeysModal()" class="btn-secondary flex-1">Cancel</button>
+    </div>
+    <div id="keysResultArea" class="mt-4 hidden">
+      <textarea id="keysResultText" rows="5" class="w-full bg-black/40 rounded-xl p-3 mono text-sm" readonly></textarea>
+      <button onclick="copyKeysResult()" class="btn-outline w-full mt-2">Copy All</button>
+    </div>
+  </div>
+</div>
 
-    async function obfuscate() {
-      const script = document.getElementById("inputScript").value;
-      const level = document.getElementById("protectionLevel").value;
-      const lightning = document.getElementById("lightning").checked;
-      const silent = document.getElementById("silent").checked;
-      
-      if (!script.trim()) {
-        alert("Please enter a Lua script");
-        return;
-      }
-      
-      const btn = event.target;
-      btn.textContent = "⏳ Obfuscating...";
-      btn.disabled = true;
-      
-      try {
-        const response = await fetch("/api/admin/projects", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "temp_" + Date.now(),
-            script: script,
-            version: "1.0.0",
-            protection_level: level,
-            lightning: lightning,
-            silent: silent
-          })
-        });
-        
-        const project = await response.json();
-        
-        const loaderResponse = await fetch(`/api/loader/${project.id}.lua`);
-        const loaderCode = await loaderResponse.text();
-        
-        document.getElementById("outputScript").value = loaderCode;
-        
-        const metricsDiv = document.getElementById("metrics");
-        metricsDiv.innerHTML = `
-          <strong>✓ Protection Applied</strong><br>
-          Level: ${level.toUpperCase()}<br>
-          Lightning: ${lightning ? "ON" : "OFF"}<br>
-          Silent: ${silent ? "ON" : "OFF"}<br>
-          Script ID: ${project.id}<br>
-          Loader URL: ${window.location.origin}/api/loader/${project.id}.lua
-        `;
-        metricsDiv.classList.remove("hidden");
-        
-        await fetch(`/api/admin/projects/${project.id}`, {
-          method: "DELETE",
-          headers: { "Authorization": "Bearer " + token }
-        });
-        
-      } catch (err) {
-        alert("Error: " + err.message);
-      } finally {
-        btn.textContent = "⚡ OBFUSCATE SCRIPT";
-        btn.disabled = false;
-      }
-    }
+<script>
+let token = localStorage.getItem("surfix_token") || "";
+let projects = [];
+let currentProjectId = null;
 
-    function copyOutput() {
-      const output = document.getElementById("outputScript");
-      output.select();
-      document.execCommand("copy");
-      alert("Copied to clipboard");
-    }
+async function api(method, path, body) {
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (res.status === 401) { logout(); return null; }
+    return await res.json();
+  } catch (e) { console.error(e); return null; }
+}
 
-    function downloadOutput() {
-      const code = document.getElementById("outputScript").value;
-      const blob = new Blob([code], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "protected_script.lua";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'projects') loadProjects();
+  if (page === 'keys') loadProjectsForKeys();
+  if (page === 'logs') loadLogs();
+  if (page === 'sessions') loadSessions();
+  if (page === 'verify') loadVerifyQueue();
+}
 
-    async function adminLogin() {
-      const username = document.getElementById("loginUsername").value;
-      const password = document.getElementById("loginPassword").value;
-      
-      try {
-        const response = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
-        });
-        
-        const data = await response.json();
-        
-        if (data.token) {
-          token = data.token;
-          localStorage.setItem("surfix_token", token);
-          loadDashboard();
-        } else {
-          document.getElementById("loginError").textContent = data.error || "Login failed";
-        }
-      } catch (err) {
-        document.getElementById("loginError").textContent = err.message;
-      }
-    }
+async function loadDashboard() {
+  const stats = await api("GET", "/api/admin/stats");
+  if (stats) {
+    document.getElementById("statsGrid").innerHTML = `
+      <div class="metric-card text-center"><div class="text-purple-400 text-3xl font-bold">${stats.projects}</div><div class="text-gray-500 text-sm">Projects</div></div>
+      <div class="metric-card text-center"><div class="text-purple-400 text-3xl font-bold">${stats.keys}</div><div class="text-gray-500 text-sm">Total Keys</div></div>
+      <div class="metric-card text-center"><div class="text-purple-400 text-3xl font-bold">${stats.active_keys}</div><div class="text-gray-500 text-sm">Active Keys</div></div>
+      <div class="metric-card text-center"><div class="text-purple-400 text-3xl font-bold">${stats.auths_today}</div><div class="text-gray-500 text-sm">Auths Today</div></div>
+      <div class="metric-card text-center"><div class="text-green-400 text-3xl font-bold">${stats.auths_ok}</div><div class="text-gray-500 text-sm">Success</div></div>
+      <div class="metric-card text-center"><div class="text-red-400 text-3xl font-bold">${stats.auths_fail}</div><div class="text-gray-500 text-sm">Failed</div></div>
+      <div class="metric-card text-center"><div class="text-cyan-400 text-3xl font-bold">${stats.active_sessions}</div><div class="text-gray-500 text-sm">Live Sessions</div></div>
+    `;
+  }
+  const logs = await api("GET", "/api/admin/logs?limit=20");
+  if (logs) {
+    document.getElementById("recentLogs").innerHTML = logs.map(l => `
+      <tr class="border-b border-gray-800"><td class="py-2 mono text-xs">${new Date(l.ts*1000).toLocaleString()}</td>
+      <td class="py-2">${l.project_id?.slice(0,8)}</td><td class="py-2 mono text-xs">${l.license_id?.slice(0,8) || 'FFA'}</td>
+      <td class="py-2"><span class="px-2 py-0.5 rounded-full text-xs ${l.status === 'ok' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${l.status}</span></td>
+      <td class="py-2 text-gray-500">${l.reason || '—'}</td></tr>
+    `).join("");
+  }
+}
 
-    async function loadDashboard() {
-      document.getElementById("obfuscatorPanel").classList.add("hidden");
-      document.getElementById("loginPanel").classList.add("hidden");
-      document.getElementById("dashboardPanel").classList.remove("hidden");
-      
-      await loadStats();
-      await loadProjects();
-    }
+async function loadProjects() {
+  projects = await api("GET", "/api/admin/projects") || [];
+  document.getElementById("projectsList").innerHTML = projects.map(p => `
+    <div class="glass-card p-4 flex justify-between items-center flex-wrap gap-3">
+      <div><span class="font-bold text-lg">${p.name}</span><span class="mono text-xs text-gray-500 ml-2">v${p.version}</span>
+        <div class="text-gray-400 text-sm mt-1">${p.key_count || 0} keys · ${p.total_auths || 0} auths</div>
+        <div class="mono text-xs text-gray-600 mt-1 break-all">${window.location.origin}/api/loader/${p.id}.lua</div>
+      </div>
+      <div class="flex gap-2"><button onclick="editProject('${p.id}')" class="btn-outline text-sm"><i class="fas fa-edit"></i></button>
+      <button onclick="openGenerateKeysForProject('${p.id}')" class="btn-outline text-sm"><i class="fas fa-key"></i></button>
+      <button onclick="deleteProject('${p.id}')" class="btn-outline text-sm text-red-400"><i class="fas fa-trash"></i></button></div>
+    </div>
+  `).join("");
+}
 
-    async function loadStats() {
-      try {
-        const response = await fetch("/api/admin/stats", {
-          headers: { "Authorization": "Bearer " + token }
-        });
-        const stats = await response.json();
-        
-        document.getElementById("stats").innerHTML = `
-          <div class="metrics">📊 Projects: ${stats.projects}</div>
-          <div class="metrics">🔑 Total Keys: ${stats.keys}</div>
-          <div class="metrics">✅ Active Keys: ${stats.active_keys}</div>
-          <div class="metrics">📈 Auths Today: ${stats.auths_today}</div>
-          <div class="metrics">✓ Success: ${stats.auths_ok}</div>
-          <div class="metrics">✗ Failed: ${stats.auths_fail}</div>
-          <div class="metrics">🌐 Live Sessions: ${stats.active_sessions}</div>
-        `;
-      } catch (err) {
-        console.error("Failed to load stats:", err);
-      }
-    }
+async function loadProjectsForKeys() {
+  projects = await api("GET", "/api/admin/projects") || [];
+  const select = document.getElementById("keyProjectSelect");
+  select.innerHTML = '<option value="">Select Project</option>' + projects.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+  if (currentProjectId) select.value = currentProjectId;
+}
 
-    async function loadProjects() {
-      try {
-        const response = await fetch("/api/admin/projects", {
-          headers: { "Authorization": "Bearer " + token }
-        });
-        projects = await response.json();
-        
-        document.getElementById("projectsList").innerHTML = projects.map(p => `
-          <div class="metrics" style="margin-bottom: 1rem;">
-            <strong>${escapeHtml(p.name)}</strong> v${p.version} (${p.protection_level})<br>
-            ${p.lightning ? '⚡ Lightning ' : ''}${p.silent ? '🔇 Silent ' : ''}${p.ffa ? '🎯 FFA ' : ''}${p.heartbeat > 0 ? '💓 Heartbeat ' : ''}${p.source_locker ? '🔒 Locker' : ''}<br>
-            Keys: ${p.key_count || 0} | Auths: ${p.total_auths || 0}<br>
-            Loader: ${window.location.origin}/api/loader/${p.id}.lua<br>
-            <button onclick="editProject('${p.id}')">Edit</button>
-            <button onclick="showGenerateKeys('${p.id}')">Generate Keys</button>
-            <button onclick="viewKeys('${p.id}')">View Keys</button>
-            <button onclick="deleteProject('${p.id}')" style="background: #ff3d5a;">Delete</button>
-          </div>
-        `).join("");
-      } catch (err) {
-        console.error("Failed to load projects:", err);
-      }
-    }
+async function loadKeysForProject(projectId) {
+  if (!projectId) { document.getElementById("keysTableBody").innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Select a project</td></tr>'; return; }
+  currentProjectId = projectId;
+  const keys = await api("GET", `/api/admin/projects/${projectId}/keys`);
+  if (!keys) return;
+  document.getElementById("keysTableBody").innerHTML = keys.map(k => `
+    <tr class="border-b border-gray-800"><td class="py-2 mono text-sm">${k.key_value}</td>
+    <td class="py-2">${k.hwid ? '<span class="text-green-400">Locked</span>' : '<span class="text-gray-500">Free</span>'}</td>
+    <td class="py-2">${k.activations}/${k.max_activations || '∞'}</td>
+    <td class="py-2">${k.expires_at ? new Date(k.expires_at*1000).toLocaleDateString() : 'Never'}</td>
+    <td class="py-2"><span class="px-2 py-0.5 rounded-full text-xs ${k.paused ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}">${k.paused ? 'Paused' : 'Active'}</span></td>
+    <td class="py-2"><button onclick="resetKeyHwid('${k.id}')" class="btn-outline text-xs mr-1"><i class="fas fa-sync-alt"></i></button>
+    <button onclick="toggleKeyPause('${k.id}')" class="btn-outline text-xs mr-1"><i class="fas ${k.paused ? 'fa-play' : 'fa-pause'}"></i></button>
+    <button onclick="deleteKey('${k.id}')" class="btn-outline text-xs text-red-400"><i class="fas fa-trash"></i></button></td></tr>
+  `).join("");
+}
 
-    function escapeHtml(str) {
-      const div = document.createElement("div");
-      div.textContent = str;
-      return div.innerHTML;
-    }
+async function loadLogs() {
+  const logs = await api("GET", "/api/admin/logs?limit=100");
+  document.getElementById("logsTableBody").innerHTML = logs?.map(l => `
+    <tr class="border-b border-gray-800"><td class="py-2 mono text-xs">${new Date(l.ts*1000).toLocaleString()}</td>
+    <td class="py-2">${l.project_id?.slice(0,8)}</td><td class="py-2 mono text-xs">${l.hwid?.slice(0,12) || '—'}</td>
+    <td class="py-2">${l.ip || '—'}</td><td class="py-2"><span class="px-2 py-0.5 rounded-full text-xs ${l.status === 'ok' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${l.status}</span></td>
+    <td class="py-2 text-gray-500">${l.reason || '—'}</td></tr>
+  `).join("") || '<tr><td colspan="6" class="text-center py-8 text-gray-500">No logs</td></tr>';
+}
 
-    function showCreateProject() {
-      document.getElementById("modalTitle").textContent = "New Project";
-      document.getElementById("editProjectId").value = "";
-      document.getElementById("projectName").value = "";
-      document.getElementById("projectVersion").value = "1.0.0";
-      document.getElementById("projectProtection").value = "max";
-      document.getElementById("projectLightning").checked = false;
-      document.getElementById("projectSilent").checked = false;
-      document.getElementById("projectFFA").checked = false;
-      document.getElementById("projectHeartbeat").checked = false;
-      document.getElementById("heartbeatLimit").value = "";
-      document.getElementById("projectSourceLocker").checked = false;
-      document.getElementById("projectScript").value = "";
-      document.getElementById("projectModal").classList.remove("hidden");
-    }
+async function loadSessions() {
+  const sessions = await api("GET", "/api/admin/sessions");
+  document.getElementById("sessionsTableBody").innerHTML = sessions?.map(s => `
+    <tr class="border-b border-gray-800"><td class="py-2 mono text-xs">${s.session_id?.slice(0,16)}</td>
+    <td class="py-2 mono text-xs">${s.license_id?.slice(0,8)}</td><td class="py-2">${s.ip || '—'}</td>
+    <td class="py-2 mono text-xs">${new Date(s.last_ping*1000).toLocaleString()}</td></tr>
+  `).join("") || '<tr><td colspan="4" class="text-center py-8 text-gray-500">No active sessions</td></tr>';
+}
 
-    function editProject(id) {
-      const project = projects.find(p => p.id === id);
-      if (!project) return;
-      
-      document.getElementById("modalTitle").textContent = "Edit Project";
-      document.getElementById("editProjectId").value = project.id;
-      document.getElementById("projectName").value = project.name;
-      document.getElementById("projectVersion").value = project.version;
-      document.getElementById("projectProtection").value = project.protection_level;
-      document.getElementById("projectLightning").checked = project.lightning === 1;
-      document.getElementById("projectSilent").checked = project.silent === 1;
-      document.getElementById("projectFFA").checked = project.ffa === 1;
-      document.getElementById("projectHeartbeat").checked = project.heartbeat > 0;
-      document.getElementById("heartbeatLimit").value = project.heartbeat || "";
-      document.getElementById("projectSourceLocker").checked = project.source_locker === 1;
-      document.getElementById("projectScript").value = project.script;
-      document.getElementById("projectModal").classList.remove("hidden");
-    }
+async function loadVerifyQueue() {
+  const queue = await api("GET", "/api/admin/verify-queue");
+  document.getElementById("verifyQueueList").innerHTML = queue?.map(p => `
+    <div class="glass-card p-4"><div class="flex justify-between items-start flex-wrap gap-3"><div><span class="font-bold">${p.name}</span><span class="mono text-xs text-gray-500 ml-2">v${p.version}</span>
+    <div class="terminal text-xs mt-2 max-h-24 overflow-auto">${p.script?.substring(0, 200)}...</div></div>
+    <div class="flex gap-2"><button onclick="verifyProject('${p.id}', true)" class="btn-primary text-sm px-4 py-2">Approve</button>
+    <button onclick="verifyProject('${p.id}', false)" class="btn-secondary text-sm px-4 py-2">Reject</button></div></div></div>
+  `).join("") || '<div class="glass-card p-8 text-center text-gray-500">Queue empty</div>';
+}
 
-    async function saveProject() {
-      const id = document.getElementById("editProjectId").value;
-      const data = {
-        name: document.getElementById("projectName").value,
-        version: document.getElementById("projectVersion").value,
-        protection_level: document.getElementById("projectProtection").value,
-        lightning: document.getElementById("projectLightning").checked,
-        silent: document.getElementById("projectSilent").checked,
-        ffa: document.getElementById("projectFFA").checked,
-        heartbeat: document.getElementById("projectHeartbeat").checked ? parseInt(document.getElementById("heartbeatLimit").value) || 3 : 0,
-        source_locker: document.getElementById("projectSourceLocker").checked,
-        script: document.getElementById("projectScript").value
-      };
-      
-      if (!data.name || !data.script) {
-        alert("Name and script are required");
-        return;
-      }
-      
-      const url = id ? `/api/admin/projects/${id}` : "/api/admin/projects";
-      const method = id ? "PUT" : "POST";
-      
-      try {
-        const response = await fetch(url, {
-          method: method,
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.locker_seed) {
-          alert(`Source Locker Seed (SAVE THIS): ${result.locker_seed}\nYou will not see it again.`);
-        }
-        
-        closeModal();
-        await loadProjects();
-        alert(id ? "Project updated!" : "Project created!");
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    }
+async function verifyProject(id, approve) {
+  await api("POST", `/api/admin/verify/${id}`, { approved: approve });
+  loadVerifyQueue();
+}
 
-    function closeModal() {
-      document.getElementById("projectModal").classList.add("hidden");
-    }
+function openNewProject() {
+  document.getElementById("modalTitle").innerText = "New Project";
+  document.getElementById("editProjectId").value = "";
+  document.getElementById("projectName").value = "";
+  document.getElementById("projectVersion").value = "1.0.0";
+  document.getElementById("projectProtection").value = "max";
+  document.getElementById("projectLightning").checked = false;
+  document.getElementById("projectSilent").checked = false;
+  document.getElementById("projectFFA").checked = false;
+  document.getElementById("projectSourceLocker").checked = false;
+  document.getElementById("projectScript").value = "";
+  document.getElementById("projectModal").classList.add("open");
+}
 
-    function closeKeysModal() {
-      document.getElementById("keysModal").classList.add("hidden");
-    }
+async function editProject(id) {
+  const p = projects.find(p => p.id === id);
+  if (!p) return;
+  document.getElementById("modalTitle").innerText = "Edit Project";
+  document.getElementById("editProjectId").value = p.id;
+  document.getElementById("projectName").value = p.name;
+  document.getElementById("projectVersion").value = p.version;
+  document.getElementById("projectProtection").value = p.protection_level;
+  document.getElementById("projectLightning").checked = p.lightning === 1;
+  document.getElementById("projectSilent").checked = p.silent === 1;
+  document.getElementById("projectFFA").checked = p.ffa === 1;
+  document.getElementById("projectSourceLocker").checked = p.source_locker === 1;
+  document.getElementById("projectScript").value = p.script;
+  document.getElementById("projectModal").classList.add("open");
+}
 
-    function closeVerifyModal() {
-      document.getElementById("verifyModal").classList.add("hidden");
-    }
+async function saveProject() {
+  const id = document.getElementById("editProjectId").value;
+  const data = {
+    name: document.getElementById("projectName").value,
+    version: document.getElementById("projectVersion").value,
+    protection_level: document.getElementById("projectProtection").value,
+    lightning: document.getElementById("projectLightning").checked,
+    silent: document.getElementById("projectSilent").checked,
+    ffa: document.getElementById("projectFFA").checked,
+    source_locker: document.getElementById("projectSourceLocker").checked,
+    script: document.getElementById("projectScript").value
+  };
+  if (!data.name || !data.script) { alert("Name and script required"); return; }
+  const result = await api(id ? "PUT" : "POST", id ? `/api/admin/projects/${id}` : "/api/admin/projects", data);
+  if (result?.locker_seed) alert(`Source Locker Seed (SAVE THIS): ${result.locker_seed}`);
+  closeProjectModal();
+  loadProjects();
+}
 
-    function showGenerateKeys(projectId) {
-      currentProjectId = projectId;
-      document.getElementById("keysProjectId").value = projectId;
-      document.getElementById("keyCount").value = "1";
-      document.getElementById("keyExpiry").value = "";
-      document.getElementById("keyMaxUses").value = "";
-      document.getElementById("keyDays").value = "";
-      document.getElementById("authExpire").value = "";
-      document.getElementById("keyNote").value = "";
-      document.getElementById("discordId").value = "";
-      document.getElementById("keysResult").innerHTML = "";
-      document.getElementById("keysModal").classList.remove("hidden");
-    }
+function closeProjectModal() { document.getElementById("projectModal").classList.remove("open"); }
 
-    async function generateKeys() {
-      const projectId = document.getElementById("keysProjectId").value;
-      const count = parseInt(document.getElementById("keyCount").value) || 1;
-      const expires_in_days = document.getElementById("keyExpiry").value ? parseInt(document.getElementById("keyExpiry").value) : undefined;
-      const max_activations = document.getElementById("keyMaxUses").value ? parseInt(document.getElementById("keyMaxUses").value) : undefined;
-      const key_days = document.getElementById("keyDays").value ? parseInt(document.getElementById("keyDays").value) : undefined;
-      const auth_expire = document.getElementById("authExpire").value ? parseInt(document.getElementById("authExpire").value) : undefined;
-      const note = document.getElementById("keyNote").value;
-      const discord_id = document.getElementById("discordId").value;
-      
-      try {
-        const response = await fetch(`/api/admin/projects/${projectId}/keys`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-          body: JSON.stringify({ count, expires_in_days, max_activations, key_days, auth_expire, note, discord_id })
-        });
-        
-        const keys = await response.json();
-        
-        document.getElementById("keysResult").innerHTML = `
-          <strong>Generated ${keys.length} keys:</strong><br>
-          <textarea style="width:100%; height:150px; font-family:monospace;" readonly>${keys.map(k => k.key).join("\n")}</textarea>
-          <button onclick="copyKeys()">Copy All</button>
-        `;
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    }
+function openGenerateKeys() {
+  if (!currentProjectId) { alert("Select a project from the dropdown first"); return; }
+  document.getElementById("keysProjectId").value = currentProjectId;
+  document.getElementById("keyCount").value = "1";
+  document.getElementById("keyExpiry").value = "";
+  document.getElementById("keyMaxUses").value = "";
+  document.getElementById("keyNote").value = "";
+  document.getElementById("keysResultArea").classList.add("hidden");
+  document.getElementById("keysModal").classList.add("open");
+}
 
-    function copyKeys() {
-      const textarea = document.querySelector("#keysResult textarea");
-      if (textarea) {
-        textarea.select();
-        document.execCommand("copy");
-        alert("Copied!");
-      }
-    }
+function openGenerateKeysForProject(projectId) {
+  currentProjectId = projectId;
+  openGenerateKeys();
+}
 
-    async function viewKeys(projectId) {
-      try {
-        const response = await fetch(`/api/admin/projects/${projectId}/keys`, {
-          headers: { "Authorization": "Bearer " + token }
-        });
-        const keys = await response.json();
-        
-        if (keys.length === 0) {
-          alert("No keys for this project");
-        } else {
-          alert(keys.map(k => `${k.key_value} (${k.activations}/${k.max_activations || "∞"} uses, HWID: ${k.hwid || "free"}, Discord: ${k.discord_id || "none"})`).join("\n"));
-        }
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    }
+async function generateKeys() {
+  const projectId = document.getElementById("keysProjectId").value;
+  const data = {
+    count: parseInt(document.getElementById("keyCount").value) || 1,
+    expires_in_days: document.getElementById("keyExpiry").value ? parseInt(document.getElementById("keyExpiry").value) : undefined,
+    max_activations: document.getElementById("keyMaxUses").value ? parseInt(document.getElementById("keyMaxUses").value) : undefined,
+    note: document.getElementById("keyNote").value
+  };
+  const keys = await api("POST", `/api/admin/projects/${projectId}/keys`, data);
+  if (keys) {
+    document.getElementById("keysResultText").value = keys.map(k => k.key).join("\n");
+    document.getElementById("keysResultArea").classList.remove("hidden");
+  }
+}
 
-    async function deleteProject(id) {
-      if (confirm("Delete this project and all its keys?")) {
-        try {
-          await fetch(`/api/admin/projects/${id}`, {
-            method: "DELETE",
-            headers: { "Authorization": "Bearer " + token }
-          });
-          await loadProjects();
-        } catch (err) {
-          alert("Error: " + err.message);
-        }
-      }
-    }
+function copyKeysResult() {
+  const text = document.getElementById("keysResultText").value;
+  navigator.clipboard.writeText(text);
+  alert("Keys copied!");
+}
 
-    if (token) {
+function closeKeysModal() { document.getElementById("keysModal").classList.remove("open"); }
+
+async function resetKeyHwid(id) { await api("PATCH", `/api/admin/keys/${id}/reset-hwid`); loadKeysForProject(currentProjectId); }
+async function toggleKeyPause(id) { await api("PATCH", `/api/admin/keys/${id}/pause`); loadKeysForProject(currentProjectId); }
+async function deleteKey(id) { if (confirm("Delete this key?")) { await api("DELETE", `/api/admin/keys/${id}`); loadKeysForProject(currentProjectId); } }
+async function deleteProject(id) { if (confirm("Delete project and all keys?")) { await api("DELETE", `/api/admin/projects/${id}`); loadProjects(); } }
+
+async function adminLogin() {
+  const username = document.getElementById("loginUsername").value;
+  const password = document.getElementById("loginPassword").value;
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.token) {
+      token = data.token;
+      localStorage.setItem("surfix_token", token);
+      document.getElementById("loginScreen").classList.remove("open");
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("app").style.display = "block";
       loadDashboard();
+      loadProjects();
+    } else {
+      document.getElementById("loginError").innerText = data.error || "Invalid credentials";
+      document.getElementById("loginError").classList.remove("hidden");
     }
-  </script>
+  } catch (err) {
+    document.getElementById("loginError").innerText = "Connection error";
+    document.getElementById("loginError").classList.remove("hidden");
+  }
+}
+
+function logout() {
+  token = "";
+  localStorage.removeItem("surfix_token");
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").classList.add("open");
+  document.getElementById("loginScreen").style.display = "flex";
+}
+
+if (token) {
+  document.getElementById("loginScreen").classList.remove("open");
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  loadDashboard();
+  loadProjects();
+}
+</script>
 </body>
 </html>
