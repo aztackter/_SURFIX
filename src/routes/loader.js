@@ -1,15 +1,16 @@
 const router = require("express").Router();
 const db = require("../database");
 
-router.get("/loader/:projectId.lua", (req, res) => {
-  const project = db.prepare("SELECT id, name, version, ffa FROM projects WHERE id = ?").get(req.params.projectId);
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  if (!project) return res.status(404).send("-- Project not found");
+router.get("/loader/:projectId.lua", async (req, res) => {
+  try {
+    const project = await db.get("SELECT id, name, version, ffa FROM projects WHERE id = ?", [req.params.projectId]);
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    if (!project) return res.status(404).send("-- Project not found");
 
-  const host = `${req.protocol}://${req.get("host")}`;
-  const ffa = project.ffa === 1;
+    const host = `${req.protocol}://${req.get("host")}`;
+    const ffa = project.ffa === 1;
 
-  const loader = `-- ${project.name} v${project.version} | Protected by SURFIX
+    const loader = `-- ${project.name} v${project.version} | Protected by SURFIX
 -- ${ffa ? "FFA Mode: No key required" : "Set your license key below before running"}
 local _KEY = "${ffa ? "FFA" : ""}" -- << PASTE YOUR KEY HERE (if not FFA)
 local _PROJECT = "${project.id}"
@@ -103,7 +104,10 @@ if not _fn then
 end
 _fn()`;
 
-  res.send(loader);
+    res.send(loader);
+  } catch (err) {
+    res.status(500).send("-- Error: " + err.message);
+  }
 });
 
 module.exports = router;
