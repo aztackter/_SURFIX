@@ -31,7 +31,84 @@ const DATA_DIR =
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-const db = new sqlite3.Database(path.join(DATA_DIR, "surfix.db"));
+const DB_PATH = path.join(DATA_DIR, "surfix.db");
+
+// ── Synchronous pre-flight using better-sqlite3-style exec via sqlite3 ────────
+// sqlite3's db.prepare().run() IS synchronous when used before any async ops.
+// We use this to atomically fix the schema before the async event loop starts.
+const db = new sqlite3.Database(DB_PATH);
+
+// Run these synchronously via the internal statement interface
+function runSync(sql) {
+  try {
+    db.prepare(sql).run();
+  } catch (e) {
+    // Ignore "no such table" — means already cleaned up
+    if (!e.message.includes("no such table") &&
+        !e.message.includes("duplicate column") &&
+        !e.message.includes("already exists")) {
+      console.warn("[DB sync]", e.message);
+    }
+  }
+}
+
+// Step 1: Kill any leftover rebuild table synchronously — this is what was
+// causing the crash. The old async DROP wasn't running before sqlite3's
+// internal WAL replay triggered the error event.
+runSync("DROP TABLE IF EXISTS _users_old_rebuild");
+
+// Step 2: Check if users table needs rebuilding (password has NOT NULL)
+// and perform the full rebuild synchronously before any async code runs.
+(function rebuildUsersIfNeeded() {
+  try {
+    const stmt = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'");
+    const row  = stmt.get();
+
+    if (!row) return; // fresh DB, handled in async section below
+
+    const lines = (row.sql || "").split("\n");
+    const pwLine = lines.find((l) => l.trim().toLowerCase().startsWith("password"));
+    const needsRebuild = pwLine && pwLine.toUpperCase().includes("NOT NULL");
+
+    if (!needsRebuild) return; // already correct, nothing to do
+
+    console.log("[DB] Rebuilding users table synchronously...");
+
+    // Rename -> create -> copy -> drop, all synchronous
+    db.prepare("ALTER TABLE users RENAME TO _users_old_rebuild").run();
+
+    db.prepare(`CREATE TABLE users (
+      id            TEXT PRIMARY KEY,
+      username      TEXT UNIQUE,
+      email         TEXT,
+      password      TEXT,
+      role          TEXT NOT NULL DEFAULT 'user',
+      plan          TEXT NOT NULL DEFAULT 'free',
+      avatar_url    TEXT,
+      verified      INTEGER NOT NULL DEFAULT 0,
+      verify_token  TEXT,
+      reset_token   TEXT,
+      reset_expires INTEGER,
+      api_key       TEXT,
+      created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      last_login    INTEGER
+    )`).run();
+
+    db.prepare(
+      "INSERT INTO users (id, username, password, created_at) " +
+      "SELECT id, username, password, COALESCE(created_at, strftime('%s','now')) " +
+      "FROM _users_old_rebuild"
+    ).run();
+
+    db.prepare("DROP TABLE IF EXISTS _users_old_rebuild").run();
+
+    console.log("[DB] users table rebuild complete.");
+  } catch (e) {
+    console.error("[DB] Rebuild error:", e.message);
+    // Safety net — make sure leftover is gone
+    try { db.prepare("DROP TABLE IF EXISTS _users_old_rebuild").run(); } catch (_) {}
+  }
+})();
 
 // ── Ready gate ────────────────────────────────────────────────────────────────
 let _dbReady = false;
@@ -45,34 +122,29 @@ function _markReady() {
   _readyQ.forEach((fn) => fn());
 }
 
-// ── Correct users DDL — password is nullable ──────────────────────────────────
-const USERS_DDL = `CREATE TABLE users (
-  id            TEXT PRIMARY KEY,
-  username      TEXT UNIQUE,
-  email         TEXT,
-  password      TEXT,
-  role          TEXT NOT NULL DEFAULT 'user',
-  plan          TEXT NOT NULL DEFAULT 'free',
-  avatar_url    TEXT,
-  verified      INTEGER NOT NULL DEFAULT 0,
-  verify_token  TEXT,
-  reset_token   TEXT,
-  reset_expires INTEGER,
-  api_key       TEXT,
-  created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-  last_login    INTEGER
-)`;
-
-// ── Startup sequence ──────────────────────────────────────────────────────────
+// ── Async schema setup (runs after synchronous rebuild is complete) ───────────
 db.serialize(() => {
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA foreign_keys = OFF");
   db.run("PRAGMA synchronous = NORMAL");
 
-  // Always clean up any leftover rebuild table from a previous crashed deploy
-  db.run("DROP TABLE IF EXISTS _users_old_rebuild");
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
+    username      TEXT UNIQUE,
+    email         TEXT,
+    password      TEXT,
+    role          TEXT NOT NULL DEFAULT 'user',
+    plan          TEXT NOT NULL DEFAULT 'free',
+    avatar_url    TEXT,
+    verified      INTEGER NOT NULL DEFAULT 0,
+    verify_token  TEXT,
+    reset_token   TEXT,
+    reset_expires INTEGER,
+    api_key       TEXT,
+    created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    last_login    INTEGER
+  )`);
 
-  // Non-users tables
   db.run(`CREATE TABLE IF NOT EXISTS projects (
     id               TEXT PRIMARY KEY,
     user_id          TEXT,
@@ -141,144 +213,68 @@ db.serialize(() => {
     UNIQUE(provider, provider_id)
   )`);
 
-  // Check if users table needs to be rebuilt (password column has NOT NULL)
-  db.get(
-    "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'",
-    (err, row) => {
-      if (err) {
-        console.error("[DB] sqlite_master error:", err.message);
-        return;
-      }
-
-      if (!row) {
-        // Fresh database — create correct schema directly
-        db.run(USERS_DDL, (e) => {
-          if (e) console.error("[DB] create users error:", e.message);
-          runMigrationsAndSeed();
-        });
-        return;
-      }
-
-      // Check if the stored DDL has NOT NULL on the password column
-      const sql = row.sql || "";
-      const passwordLine = sql.split("\n").find((l) => l.trim().toLowerCase().startsWith("password"));
-      const needsRebuild = passwordLine && passwordLine.toUpperCase().includes("NOT NULL");
-
-      if (!needsRebuild) {
-        // Already correct schema
-        runMigrationsAndSeed();
-        return;
-      }
-
-      // Rebuild: rename -> create new -> copy -> drop old
-      console.log("[DB] Rebuilding users table to remove NOT NULL from password...");
-
-      db.run("ALTER TABLE users RENAME TO _users_old_rebuild", (e1) => {
-        if (e1) {
-          console.error("[DB] rename error:", e1.message);
-          runMigrationsAndSeed(); // continue anyway
-          return;
-        }
-
-        db.run(USERS_DDL, (e2) => {
-          if (e2) {
-            console.error("[DB] create new users error:", e2.message);
-            // Try to restore the old table name
-            db.run("ALTER TABLE _users_old_rebuild RENAME TO users");
-            runMigrationsAndSeed();
-            return;
-          }
-
-          // Copy existing rows — only columns guaranteed to exist in the old table
-          db.run(
-            "INSERT INTO users (id, username, password, created_at) " +
-            "SELECT id, username, password, COALESCE(created_at, strftime('%s','now')) " +
-            "FROM _users_old_rebuild",
-            (e3) => {
-              if (e3) console.error("[DB] copy rows error:", e3.message);
-
-              // Always clean up old table, even if copy had issues
-              db.run("DROP TABLE IF EXISTS _users_old_rebuild", (e4) => {
-                if (e4) console.error("[DB] drop old table error:", e4.message);
-                else console.log("[DB] users table rebuild complete.");
-                runMigrationsAndSeed();
-              });
-            }
-          );
-        });
-      });
-    }
-  );
-});
-
-function runMigrationsAndSeed() {
-  db.serialize(() => {
-    // Add any missing columns (safe to re-run — duplicate column errors ignored)
-    const migrations = [
-      "ALTER TABLE users ADD COLUMN email         TEXT",
-      "ALTER TABLE users ADD COLUMN role          TEXT NOT NULL DEFAULT 'user'",
-      "ALTER TABLE users ADD COLUMN plan          TEXT NOT NULL DEFAULT 'free'",
-      "ALTER TABLE users ADD COLUMN avatar_url    TEXT",
-      "ALTER TABLE users ADD COLUMN verified      INTEGER NOT NULL DEFAULT 0",
-      "ALTER TABLE users ADD COLUMN verify_token  TEXT",
-      "ALTER TABLE users ADD COLUMN reset_token   TEXT",
-      "ALTER TABLE users ADD COLUMN reset_expires INTEGER",
-      "ALTER TABLE users ADD COLUMN last_login    INTEGER",
-      "ALTER TABLE users ADD COLUMN api_key       TEXT",
-      "ALTER TABLE projects ADD COLUMN obfuscate  INTEGER NOT NULL DEFAULT 1",
-    ];
-    for (const sql of migrations) {
-      db.run(sql, (e) => {
-        if (e && !e.message.includes("duplicate column")) {
-          console.warn("[DB migration]", e.message);
-        }
-      });
-    }
-
-    // Indexes
-    db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON users(email) WHERE email IS NOT NULL");
-    db.run("CREATE INDEX IF NOT EXISTS idx_lic_key      ON licenses(key_value)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_lic_project  ON licenses(project_id)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_lic_hwid     ON licenses(hwid)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_sess_license ON active_sessions(license_id)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_sess_ping    ON active_sessions(last_ping)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_log_ts       ON auth_logs(ts)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_log_status   ON auth_logs(status)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_log_project  ON auth_logs(project_id)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_log_ip       ON auth_logs(ip)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_oauth_user   ON oauth_accounts(user_id)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_proj_user    ON projects(user_id)");
-
-    db.run("PRAGMA foreign_keys = ON");
-
-    // Backfills
-    db.run("UPDATE projects SET obfuscate = 1 WHERE obfuscate IS NULL");
-    db.run("UPDATE projects SET user_id = 'admin-1' WHERE user_id IS NULL");
-
-    // Seed / repair admin
-    db.get("SELECT id FROM users WHERE username = 'admin'", (err, row) => {
-      if (row) {
-        db.run(
-          "UPDATE users SET role = 'admin', verified = 1, " +
-          "email = COALESCE(NULLIF(email,''), 'admin@surfix.local') " +
-          "WHERE username = 'admin'"
-        );
-        return _markReady();
-      }
-      const pass = process.env.ADMIN_PASSWORD || "admin123";
-      const hash = bcrypt.hashSync(pass, 12);
-      db.run(
-        "INSERT INTO users (id, username, email, password, role, verified) " +
-        "VALUES ('admin-1', 'admin', 'admin@surfix.local', ?, 'admin', 1)",
-        [hash],
-        (e) => {
-          if (e && !e.message.includes("UNIQUE")) console.error("[DB] seed error:", e.message);
-          _markReady();
-        }
-      );
+  // Column migrations — safe to re-run
+  const migrations = [
+    "ALTER TABLE users ADD COLUMN email         TEXT",
+    "ALTER TABLE users ADD COLUMN role          TEXT NOT NULL DEFAULT 'user'",
+    "ALTER TABLE users ADD COLUMN plan          TEXT NOT NULL DEFAULT 'free'",
+    "ALTER TABLE users ADD COLUMN avatar_url    TEXT",
+    "ALTER TABLE users ADD COLUMN verified      INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN verify_token  TEXT",
+    "ALTER TABLE users ADD COLUMN reset_token   TEXT",
+    "ALTER TABLE users ADD COLUMN reset_expires INTEGER",
+    "ALTER TABLE users ADD COLUMN last_login    INTEGER",
+    "ALTER TABLE users ADD COLUMN api_key       TEXT",
+    "ALTER TABLE projects ADD COLUMN obfuscate  INTEGER NOT NULL DEFAULT 1",
+  ];
+  for (const sql of migrations) {
+    db.run(sql, (e) => {
+      if (e && !e.message.includes("duplicate column")) console.warn("[DB migration]", e.message);
     });
+  }
+
+  // Indexes
+  db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON users(email) WHERE email IS NOT NULL");
+  db.run("CREATE INDEX IF NOT EXISTS idx_lic_key      ON licenses(key_value)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_lic_project  ON licenses(project_id)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_lic_hwid     ON licenses(hwid)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_sess_license ON active_sessions(license_id)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_sess_ping    ON active_sessions(last_ping)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_log_ts       ON auth_logs(ts)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_log_status   ON auth_logs(status)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_log_project  ON auth_logs(project_id)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_log_ip       ON auth_logs(ip)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_oauth_user   ON oauth_accounts(user_id)");
+  db.run("CREATE INDEX IF NOT EXISTS idx_proj_user    ON projects(user_id)");
+
+  db.run("PRAGMA foreign_keys = ON");
+
+  // Backfills
+  db.run("UPDATE projects SET obfuscate = 1 WHERE obfuscate IS NULL");
+  db.run("UPDATE projects SET user_id = 'admin-1' WHERE user_id IS NULL");
+
+  // Seed / repair admin
+  db.get("SELECT id FROM users WHERE username = 'admin'", (err, row) => {
+    if (row) {
+      db.run(
+        "UPDATE users SET role = 'admin', verified = 1, " +
+        "email = COALESCE(NULLIF(email,''), 'admin@surfix.local') WHERE username = 'admin'"
+      );
+      return _markReady();
+    }
+    const pass = process.env.ADMIN_PASSWORD || "admin123";
+    const hash = bcrypt.hashSync(pass, 12);
+    db.run(
+      "INSERT INTO users (id, username, email, password, role, verified) " +
+      "VALUES ('admin-1', 'admin', 'admin@surfix.local', ?, 'admin', 1)",
+      [hash],
+      (e) => {
+        if (e && !e.message.includes("UNIQUE")) console.error("[DB] seed error:", e.message);
+        _markReady();
+      }
+    );
   });
-}
+});
 
 // ── Promise helpers ───────────────────────────────────────────────────────────
 function get(sql, params = []) {
