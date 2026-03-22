@@ -23,16 +23,6 @@ function escapeLua(str) {
   return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function escapeHtml(str) {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function isValidProjectId(id) {
   return /^[a-zA-Z0-9_-]+$/.test(id);
 }
@@ -52,11 +42,6 @@ function cacheSet(key, value) {
   }
   loaderCache.set(key, value);
 }
-
-const HTML_TEMPLATE = fs.readFileSync(
-  path.join(__dirname, "../templates/loader.html"),
-  "utf8"
-);
 
 const loaderLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -148,52 +133,24 @@ router.get("/loader/:projectId.lua", async (req, res) => {
     if (!project) return res.status(404).type("text/plain").send("-- Project not found");
 
     const ffa = project.ffa === 1;
-    const accept = req.headers.accept || "";
-    const userAgent = req.headers["user-agent"] || "";
-    
-    const executorPatterns = /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor|LuaExecutor|Xeno|Solara|Aurora|Swift|Nova|RequestAsync|HttpService/i;
-    const isExecutor = executorPatterns.test(userAgent);
-    const isBrowser = accept.includes("text/html") && /Mozilla|Chrome|Safari|Firefox|Edg/i.test(userAgent) && !isExecutor;
 
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
 
-    if (!isBrowser) {
-      const cacheKey = `${project.id}:${project.version}:${HOST}`;
-      const cached = cacheGet(cacheKey);
-      if (cached) {
-        res.type("text/plain").send(cached);
-        return;
-      }
-
-      const rawLoader = buildRawLoader(project, ffa);
-      const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
-      const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
-      cacheSet(cacheKey, obfuscatedLoader);
-      res.type("text/plain").send(obfuscatedLoader);
+    const cacheKey = `${project.id}:${project.version}:${HOST}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      res.send(cached);
       return;
     }
 
-    const loaderUrl = `${HOST}/api/loader/${project.id}.lua`;
-    const urlParts = [];
-    for (let i = 0; i < loaderUrl.length; i++) {
-      urlParts.push(loaderUrl.charCodeAt(i).toString(16));
-    }
-    const partsJson = JSON.stringify(urlParts);
-
-    let html = HTML_TEMPLATE
-      .replace(/__PROJECT_NAME__/g, escapeHtml(project.name))
-      .replace(/__FFA_NOTE__/g, ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
-      .replace(/__PARTS__/g, partsJson);
-
-    res.set({
-      "X-Content-Type-Options": "nosniff",
-      "X-Frame-Options": "DENY",
-      "Referrer-Policy": "no-referrer",
-      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'"
-    });
-    res.type("html").send(html);
+    const rawLoader = buildRawLoader(project, ffa);
+    const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
+    const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
+    cacheSet(cacheKey, obfuscatedLoader);
+    res.send(obfuscatedLoader);
   } catch (err) {
     console.error("Loader error:", err);
     res.status(500).type("text/plain").send("-- Error: " + err.message);
