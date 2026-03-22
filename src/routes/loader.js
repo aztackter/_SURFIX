@@ -13,7 +13,7 @@ const LOADER_SECRET = process.env.LOADER_SECRET;
 if (!process.env.PUBLIC_URL) {
   throw new Error("PUBLIC_URL must be set in environment");
 }
-const HOST = process.env.PUBLIC_URL;
+const HOST = process.env.PUBLIC_URL.replace(/\/$/, ""); // remove trailing slash
 
 const MAX_CACHE_SIZE = 500;
 const loaderCache = new Map();
