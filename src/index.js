@@ -26,25 +26,21 @@ app.use(morgan("tiny"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Rate limits
 app.use("/api/v1/auth",      rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true }));
 app.use("/api/v1/heartbeat", rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true }));
 app.use("/api/admin/login",  rateLimit({ windowMs: 60_000, max: 10,  standardHeaders: true }));
-app.use("/api/",             rateLimit({ windowMs: 60_000, max: 300, standardHeaders: true }));
 
-// Routes
 app.use("/api/public",     require("./routes/public"));
+app.use("/api/loader",     require("./routes/loader"));
 app.use("/api",            require("./routes/loader"));
 app.use("/api/v1",         require("./routes/auth"));
 app.use("/api/v1",         require("./routes/heartbeat"));
 app.use("/api/admin",      require("./routes/admin"));
 
-// Dashboard route - must come BEFORE catch-all
 app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/dashboard.html"));
 });
 
-// Catch-all for SPA - must be LAST
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
