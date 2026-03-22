@@ -101,6 +101,8 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
     .project-item {
       background: rgba(0,0,0,0.3);
@@ -111,6 +113,7 @@
     .project-name {
       font-weight: 700;
       font-size: 1rem;
+      word-break: break-all;
     }
     .project-meta {
       color: rgba(255,255,255,0.4);
@@ -144,6 +147,15 @@
     .btn-danger:hover {
       background: rgba(236,72,153,0.4);
       border-color: #ec4899;
+    }
+    .loader-url {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.5);
+      padding: 4px 8px;
+      border-radius: 6px;
+      word-break: break-all;
+      margin-top: 4px;
     }
     .loading {
       text-align: center;
@@ -225,6 +237,10 @@
       font-size: 0.75rem;
       color: #4ade80;
     }
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -295,6 +311,19 @@
   </div>
 </div>
 
+<div id="loaderModal" class="modal">
+  <div class="modal-content">
+    <h3>Loader URL</h3>
+    <p style="margin-bottom: 0.5rem;">Share this URL with your users:</p>
+    <div style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 0.75rem; word-break: break-all; font-family: monospace; margin-bottom: 1rem;" id="loaderUrlDisplay"></div>
+    <p style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">Users paste their license key in the loader script before running.</p>
+    <div class="modal-buttons">
+      <button onclick="copyLoaderUrl()">Copy URL</button>
+      <button onclick="closeLoaderModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let token = localStorage.getItem("surfix_token");
 
@@ -362,6 +391,7 @@
             <button onclick="editProject('${p.id}')">Edit</button>
             <button onclick="showGenerateKeys('${p.id}')">Generate Keys</button>
             <button onclick="viewKeys('${p.id}')">View Keys</button>
+            <button onclick="showLoaderUrl('${p.id}')">Copy URL</button>
             <button class="btn-danger" onclick="deleteProject('${p.id}')">Delete</button>
           </div>
         </div>
@@ -372,7 +402,7 @@
         document.getElementById("logsTable").innerHTML = "<div class='loading'>No auth logs yet.</div>";
       } else {
         document.getElementById("logsTable").innerHTML = `
-          <table>
+          <table style="width:100%;">
             <thead><tr><th>Time</th><th>Project</th><th>HWID</th><th>IP</th><th>Status</th><th>Reason</th></tr></thead>
             <tbody>
               ${logs.map(l => `
@@ -522,6 +552,22 @@
     } catch (err) {
       alert("Error loading keys: " + err.message);
     }
+  }
+
+  function showLoaderUrl(projectId) {
+    const url = `${window.location.origin}/api/loader/${projectId}.lua`;
+    document.getElementById("loaderUrlDisplay").textContent = url;
+    document.getElementById("loaderModal").classList.add("open");
+  }
+
+  function closeLoaderModal() {
+    document.getElementById("loaderModal").classList.remove("open");
+  }
+
+  function copyLoaderUrl() {
+    const url = document.getElementById("loaderUrlDisplay").textContent;
+    navigator.clipboard.writeText(url);
+    alert("Loader URL copied to clipboard!");
   }
 
   async function deleteProject(id) {
