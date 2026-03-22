@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SURFIX — Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -237,6 +237,12 @@
       font-size: 0.75rem;
       color: #4ade80;
     }
+    .checkbox-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
     @media (max-width: 768px) {
       body { padding: 1rem; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -284,9 +290,12 @@
       <option value="medium">Medium</option>
       <option value="max" selected>Maximum</option>
     </select>
-    <label><input type="checkbox" id="projectLightning"> Lightning Mode (faster, fewer checks)</label>
-    <label><input type="checkbox" id="projectSilent"> Silent Mode (suppress console output)</label>
-    <label><input type="checkbox" id="projectFFA"> FFA Mode (no license key required)</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="projectLightning"> Lightning Mode (faster, fewer checks)</label>
+      <label><input type="checkbox" id="projectSilent"> Silent Mode (suppress console output)</label>
+      <label><input type="checkbox" id="projectFFA"> FFA Mode (no license key required)</label>
+      <label><input type="checkbox" id="projectObfuscate" checked> Enable Obfuscation</label>
+    </div>
     <textarea id="projectScript" rows="8" placeholder="-- Paste your Lua script here&#10;print('Hello, World!')"></textarea>
     <div class="modal-buttons">
       <button onclick="closeModal()">Cancel</button>
@@ -385,7 +394,7 @@
           <div class="project-name">${escapeHtml(p.name)} v${p.version}</div>
           <div class="project-meta">
             Keys: ${p.key_count || 0} | Auths: ${p.total_auths || 0} | Level: ${p.protection_level}
-            ${p.lightning ? ' | ⚡ Lightning' : ''}${p.silent ? ' | 🔇 Silent' : ''}${p.ffa ? ' | 🎯 FFA' : ''}
+            ${p.lightning ? ' | ⚡ Lightning' : ''}${p.silent ? ' | 🔇 Silent' : ''}${p.ffa ? ' | 🎯 FFA' : ''}${p.source_locker ? ' | 🔒 Locker' : ''}${p.obfuscate !== false ? ' | 🔐 Obfuscated' : ' | 📄 Plain'}
           </div>
           <div class="project-actions">
             <button onclick="editProject('${p.id}')">Edit</button>
@@ -443,6 +452,7 @@
     document.getElementById("projectLightning").checked = false;
     document.getElementById("projectSilent").checked = false;
     document.getElementById("projectFFA").checked = false;
+    document.getElementById("projectObfuscate").checked = true;
     document.getElementById("projectScript").value = "";
     document.getElementById("projectModal").classList.add("open");
   }
@@ -460,6 +470,7 @@
       document.getElementById("projectLightning").checked = p.lightning === 1;
       document.getElementById("projectSilent").checked = p.silent === 1;
       document.getElementById("projectFFA").checked = p.ffa === 1;
+      document.getElementById("projectObfuscate").checked = p.obfuscate !== false;
       document.getElementById("projectScript").value = p.script || "";
       document.getElementById("projectModal").classList.add("open");
     } catch (err) {
@@ -476,6 +487,7 @@
       lightning: document.getElementById("projectLightning").checked,
       silent: document.getElementById("projectSilent").checked,
       ffa: document.getElementById("projectFFA").checked,
+      obfuscate: document.getElementById("projectObfuscate").checked,
       script: document.getElementById("projectScript").value
     };
     if (!data.name || !data.script) {
