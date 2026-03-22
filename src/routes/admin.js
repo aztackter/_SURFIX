@@ -40,10 +40,21 @@ router.post("/login", async (req, res) => {
   const { username, password } = req.body || {};
   try {
     const user = await db.get("SELECT * FROM users WHERE username = ?", [username || "admin"]);
-    if (!user || !bcrypt.compareSync(password || "", user.password))
+    if (!user || !bcrypt.compareSync(password || "", user.password)) {
       return res.status(401).json({ error: "Invalid credentials" });
+    }
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "24h" });
     res.json({ token, api_key: user.api_key });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/verify", auth, async (req, res) => {
+  try {
+    const user = await db.get("SELECT id, username, api_key FROM users WHERE id = ?", [req.user.id]);
+    if (!user) return res.status(401).json({ error: "User not found" });
+    res.json({ valid: true, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
