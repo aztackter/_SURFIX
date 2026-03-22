@@ -298,9 +298,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 <div id="loader">
   <div style="position:relative;width:76px;height:76px;">
     <div class="load-ring"></div>
-    <div class="load-logo" style="position:absolute;inset:0;margin:auto;width:44px;height:44px;">
-      <!-- logo is just the gradient square – no image needed -->
-    </div>
+    <div class="load-logo" style="position:absolute;inset:0;margin:auto;width:44px;height:44px;"></div>
   </div>
   <div class="load-track"><div class="load-fill" id="lf"></div></div>
   <div class="load-lbl" id="ll">Initializing…</div>
@@ -382,7 +380,6 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   <div class="eyebrow2 rev">Protection Suite</div>
   <h2 class="sec-h rev">Every Attack<br><span class="gt">Shut Down.</span></h2>
   <div class="bento">
-    <!-- layer stack -->
     <div class="bc s3 rev rd1">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
         <div class="bic bv">🛡️</div>
@@ -398,7 +395,6 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
         <div class="lb lb7"><div class="lf lf7"></div><span class="ln">7</span>Integrity Check</div>
       </div>
     </div>
-    <!-- vm opcode -->
     <div class="bc s9 rev rd2" id="vmCard">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
         <div style="display:flex;align-items:center;gap:12px;">
@@ -411,7 +407,6 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
       </div>
       <div id="ov"></div>
     </div>
-    <!-- license -->
     <div class="bc s6 rev rd1">
       <div class="bic bp">🔑</div>
       <h3>License Management</h3>
@@ -422,7 +417,6 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
         <span class="tag tv">max_uses</span>
       </div>
     </div>
-    <!-- heartbeat -->
     <div class="bc s6 rev rd2" id="hbCard">
       <div class="bic bg2">💓</div>
       <h3>Heartbeat System</h3>
@@ -432,7 +426,6 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
         <path class="hb-p" d="M0,31 L80,31 L92,9 L104,53 L116,13 L128,49 L140,31 L200,31 L212,7 L224,55 L236,11 L248,51 L260,31 L320,31 L332,9 L344,53 L356,13 L368,49 L380,31 L480,31"/>
       </svg>
     </div>
-    <!-- cache -->
     <div class="bc s3 rev rd3">
       <div class="bic ba">⚡</div>
       <h3>Variant Cache</h3>
@@ -442,13 +435,11 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
         <span style="color:rgba(255,255,255,.27);font-size:.8rem;">faster delivery</span>
       </div>
     </div>
-    <!-- anti-tamper -->
     <div class="bc s3 rev rd1">
       <div class="bic br">🛡️</div>
       <h3>Anti-Tamper</h3>
       <p>Runtime checksums, debugger detection, self-verification. Your code fights back.</p>
     </div>
-    <!-- source locker -->
     <div class="bc s6 rev rd2">
       <div class="bic bv">🔐</div>
       <h3>Source Locker</h3>
@@ -548,6 +539,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
     <div class="crow">
       <label><input type="checkbox" id="cl2"> ⚡ Lightning Mode</label>
       <label><input type="checkbox" id="cs2"> 🔇 Silent Mode</label>
+      <label><input type="checkbox" id="enableObfuscation" checked> 🔒 Enable Obfuscation</label>
     </div>
     <button class="mbtn" id="obfBtn" onclick="doObf()">🚀 Obfuscate</button>
     <div id="obfRes" style="margin-top:13px;"></div>
@@ -737,23 +729,23 @@ document.getElementById('lbtn').addEventListener('click',async()=>{
 async function doObf(){
   const script=document.getElementById('sc').value.trim();
   if(!script){alert('Paste a Lua script first');return;}
-  const lvl=document.getElementById('slvl').value,li2=document.getElementById('cl2').checked,si=document.getElementById('cs2').checked;
+  const lvl=document.getElementById('slvl').value,li2=document.getElementById('cl2').checked,si=document.getElementById('cs2').checked,obfEnabled=document.getElementById('enableObfuscation').checked;
   const btn=document.getElementById('obfBtn'),res=document.getElementById('obfRes');
-  btn.textContent='⏳ Obfuscating…';btn.disabled=true;res.innerHTML='';
+  btn.textContent='⏳ Processing…';btn.disabled=true;res.innerHTML='';
   try{
-    const r=await fetch('/api/admin/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'temp_'+Date.now(),script,version:'1.0.0',protection_level:lvl,lightning:li2,silent:si})});
-    if(!r.ok){
-      const err=await r.text();
-      throw new Error(`Server error: ${r.status} - ${err.slice(0,100)}`);
+    let outputCode;
+    if(obfEnabled){
+      const r=await fetch('/api/public/obfuscate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script,protection_level:lvl,lightning:li2,silent:si})});
+      const data=await r.json();
+      if(!data.success)throw new Error(data.error);
+      outputCode=data.script;
+      res.innerHTML=`<div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:13px;padding:15px;"><p style="color:#34d399;font-weight:700;margin-bottom:9px;">✔ Protected · ${lvl.toUpperCase()}</p><textarea rows="4" readonly style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:9px;color:#86efac;font-family:var(--M);font-size:.72rem;">${outputCode}</textarea><button onclick="navigator.clipboard.writeText(this.previousSibling.value).then(()=>alert('Copied!'))" style="width:100%;margin-top:9px;padding:9px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);border-radius:9px;color:#22d3ee;font-family:var(--F);cursor:pointer;font-weight:700;font-size:.83rem;">Copy to Clipboard</button></div>`;
+    }else{
+      outputCode=script;
+      res.innerHTML=`<div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:13px;padding:15px;"><p style="color:#34d399;font-weight:700;margin-bottom:9px;">✔ No Obfuscation Applied</p><textarea rows="4" readonly style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:9px;color:#86efac;font-family:var(--M);font-size:.72rem;">${outputCode}</textarea><button onclick="navigator.clipboard.writeText(this.previousSibling.value).then(()=>alert('Copied!'))" style="width:100%;margin-top:9px;padding:9px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);border-radius:9px;color:#22d3ee;font-family:var(--F);cursor:pointer;font-weight:700;font-size:.83rem;">Copy to Clipboard</button></div>`;
     }
-    const proj=await r.json();
-    const lr=await fetch(`/api/loader/${proj.id}.lua`);
-    if(!lr.ok) throw new Error(`Loader fetch failed: ${lr.status}`);
-    const code=await lr.text();
-    res.innerHTML=`<div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:13px;padding:15px;"><p style="color:#34d399;font-weight:700;margin-bottom:9px;">✔ Protected · ${lvl.toUpperCase()}</p><textarea rows="4" readonly style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:9px;color:#64748b;font-family:var(--M);font-size:.72rem;">${code}</textarea><button onclick="navigator.clipboard.writeText(this.previousSibling.value).then(()=>alert('Copied!'))" style="width:100%;margin-top:9px;padding:9px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);border-radius:9px;color:#22d3ee;font-family:var(--F);cursor:pointer;font-weight:700;font-size:.83rem;">Copy to Clipboard</button></div>`;
-    await fetch(`/api/admin/projects/${proj.id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+tok}});
   }catch(err){
-    res.innerHTML=`<p style="color:#f87171;margin-top:9px;font-size:.83rem;">Error: ${err.message}</p><p style="color:rgba(255,255,255,.3);font-size:.75rem;margin-top:8px;">If this persists, ensure the backend server is running and the API routes are properly deployed.</p>`;
+    res.innerHTML=`<p style="color:#f87171;margin-top:9px;font-size:.83rem;">Error: ${err.message}</p>`;
   }finally{btn.textContent='🚀 Obfuscate';btn.disabled=false;}
 }
 </script>
