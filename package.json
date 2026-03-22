@@ -1,7 +1,7 @@
 {
   "name": "surfix",
-  "version": "4.2.1",
-  "description": "Commercial-grade Lua obfuscator with licensing and cache optimization",
+  "version": "4.3.0",
+  "description": "Lua obfuscator with licensing",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
