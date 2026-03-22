@@ -148,15 +148,6 @@
       background: rgba(236,72,153,0.4);
       border-color: #ec4899;
     }
-    .loader-url {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.7rem;
-      background: rgba(0,0,0,0.5);
-      padding: 4px 8px;
-      border-radius: 6px;
-      word-break: break-all;
-      margin-top: 4px;
-    }
     .loading {
       text-align: center;
       padding: 2rem;
@@ -407,7 +398,7 @@
       } else {
         document.getElementById("logsTable").innerHTML = `
           <table style="width:100%;">
-            <thead><tr><th>Time</th><th>Project</th><th>HWID</th><th>IP</th><th>Status</th><th>Reason</th></tr></thead>
+            <thead><tr><th>Time</th><th>Project</th><th>HWID</th><th>IP</th><th>Status</th><th>Reason</th></thead>
             <tbody>
               ${logs.map(l => `
                 <tr>
@@ -493,10 +484,12 @@
       obfuscate: document.getElementById("projectObfuscate").checked,
       script: document.getElementById("projectScript").value
     };
+    
     if (!data.name || !data.script) {
       alert("Name and script are required");
       return;
     }
+    
     try {
       const url = id ? `/api/admin/projects/${id}` : "/api/admin/projects";
       const method = id ? "PUT" : "POST";
