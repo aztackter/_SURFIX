@@ -123,8 +123,8 @@ if _data.error then
   return
 end
 
-if not _data.script then
-  error("[SURFIX] Empty response from server")
+if not _data.script or _data.script == "" then
+  error("[SURFIX] Received empty or invalid script from server")
   return
 end
 
@@ -138,22 +138,31 @@ _fn()`;
 }
 
 router.get("/loader/:projectId.lua", async (req, res) => {
+  console.log("Loader request from:", req.headers["user-agent"]);
   try {
     const { projectId } = req.params;
     if (!isValidProjectId(projectId)) {
+      console.log("Invalid project ID:", projectId);
       return res.status(400).type("text/plain").send("-- Invalid project ID");
     }
 
     const project = await db.get("SELECT id, name, version, ffa FROM projects WHERE id = ?", [projectId]);
-    if (!project) return res.status(404).type("text/plain").send("-- Project not found");
+    if (!project) {
+      console.log("Project not found:", projectId);
+      return res.status(404).type("text/plain").send("-- Project not found");
+    }
 
+    console.log("Project found:", project.name, "FFA:", project.ffa);
+    
     const ffa = project.ffa === 1;
     const accept = req.headers.accept || "";
     const userAgent = req.headers["user-agent"] || "";
     
-    const executorPatterns = /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor/i;
+    const executorPatterns = /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor|LuaExecutor|Xeno|Solara|Aurora|Swift|Nova/i;
     const isExecutor = executorPatterns.test(userAgent);
-    const isBrowser = accept.includes("text/html") && !accept.includes("application/json") && /Mozilla|Chrome|Safari|Firefox|Edg/i.test(userAgent) && !isExecutor;
+    const isBrowser = accept.includes("text/html") && /Mozilla|Chrome|Safari|Firefox|Edg/i.test(userAgent) && !isExecutor;
+
+    console.log("isExecutor:", isExecutor, "isBrowser:", isBrowser);
 
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
@@ -172,6 +181,7 @@ router.get("/loader/:projectId.lua", async (req, res) => {
       .replace(/__PARTS__/g, partsJson);
 
     if (isBrowser) {
+      console.log("Serving HTML to browser");
       res.set({
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
@@ -182,17 +192,21 @@ router.get("/loader/:projectId.lua", async (req, res) => {
       return;
     }
 
+    console.log("Serving Lua loader to executor");
     const cacheKey = `${project.id}:${project.version}:${HOST}`;
     const cached = cacheGet(cacheKey);
     if (cached) {
+      console.log("Cache hit for:", cacheKey);
       res.type("text/plain").send(cached);
       return;
     }
 
+    console.log("Cache miss, generating new loader for:", cacheKey);
     const rawLoader = buildRawLoader(project, ffa);
     const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
     const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
     cacheSet(cacheKey, obfuscatedLoader);
+    console.log("Loader generated, length:", obfuscatedLoader.length);
     res.type("text/plain").send(obfuscatedLoader);
   } catch (err) {
     console.error("Loader error:", err);
