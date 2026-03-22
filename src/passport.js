@@ -1,9 +1,8 @@
-const passport   = require("passport");
-const GoogleStrategy   = require("passport-google-oauth20").Strategy;
-const GitHubStrategy   = require("passport-github2").Strategy;
-const FacebookStrategy = require("passport-facebook").Strategy;
-const LocalStrategy    = require("passport-local").Strategy;
-const bcrypt   = require("bcryptjs");
+const passport       = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const GitHubStrategy = require("passport-github2").Strategy;
+const LocalStrategy  = require("passport-local").Strategy;
+const bcrypt         = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const db = require("./database");
 
@@ -26,7 +25,7 @@ passport.use(
     try {
       const user = await db.get("SELECT * FROM users WHERE email = ?", [email.toLowerCase().trim()]);
       if (!user) return done(null, false, { message: "No account found with that email." });
-      if (!user.password) return done(null, false, { message: "This account uses social login. Use Google/GitHub/Facebook." });
+      if (!user.password) return done(null, false, { message: "This account uses social login. Use Google or GitHub." });
       if (!user.verified) return done(null, false, { message: "Please verify your email first." });
       if (!bcrypt.compareSync(password, user.password)) return done(null, false, { message: "Incorrect password." });
       await db.run("UPDATE users SET last_login = strftime('%s','now') WHERE id = ?", [user.id]);
@@ -115,28 +114,6 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       async (_at, _rt, profile, done) => {
         try {
           const user = await findOrCreateOAuthUser("github", profile.id, profile);
-          done(null, user);
-        } catch (err) {
-          done(err);
-        }
-      }
-    )
-  );
-}
-
-// ─── Facebook ─────────────────────────────────────────────────────────────────
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-  passport.use(
-    new FacebookStrategy(
-      {
-        clientID: process.env.FACEBOOK_APP_ID,
-        clientSecret: process.env.FACEBOOK_APP_SECRET,
-        callbackURL: `${HOST}/auth/facebook/callback`,
-        profileFields: ["id", "displayName", "photos", "email"],
-      },
-      async (_at, _rt, profile, done) => {
-        try {
-          const user = await findOrCreateOAuthUser("facebook", profile.id, profile);
           done(null, user);
         } catch (err) {
           done(err);
