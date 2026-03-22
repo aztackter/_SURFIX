@@ -71,7 +71,7 @@ router.use("/loader", loaderLimiter);
 function buildRawLoader(project, ffa) {
   return `-- ${escapeLua(project.name)} v${escapeLua(project.version)} | Protected by SURFIX
 -- ${ffa ? "FFA Mode: No key required" : "Set your license key below before running"}
-local _KEY = "${ffa ? "FFA" : ""}" -- << PASTE YOUR KEY HERE (if not FFA)
+local _KEY = "${ffa ? "FFA" : ""}"
 local _PROJECT = "${escapeLua(project.id)}"
 local _HOST = "${HOST}"
 
