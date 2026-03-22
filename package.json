@@ -1,6 +1,6 @@
 {
   "name": "surfix",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "Commercial-grade Lua obfuscator with licensing and cache optimization",
   "main": "src/index.js",
   "scripts": {
@@ -26,7 +26,8 @@
     "nodemailer": "^6.9.8",
     "express-session": "^1.18.0",
     "connect-sqlite3": "^0.9.13",
-    "validator": "^13.11.0"
+    "validator": "^13.11.0",
+    "cookie-parser": "^1.4.6"
   },
   "engines": {
     "node": ">=18.0.0"
