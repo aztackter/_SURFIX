@@ -153,9 +153,48 @@ db.serialize(() => {
   ];
   indexes.forEach((sql) => db.run(sql));
 
-  // Seed admin user — runs after all CREATE TABLE statements in serialize block
+  // ── Migrations — safely add new columns to existing databases ───────────────
+  // These are all safe to run repeatedly — SQLite ignores "duplicate column" errors.
+  const migrations = [
+    // users table — new columns added in v4.2.0
+    "ALTER TABLE users ADD COLUMN email         TEXT",
+    "ALTER TABLE users ADD COLUMN role          TEXT NOT NULL DEFAULT 'user'",
+    "ALTER TABLE users ADD COLUMN plan          TEXT NOT NULL DEFAULT 'free'",
+    "ALTER TABLE users ADD COLUMN avatar_url    TEXT",
+    "ALTER TABLE users ADD COLUMN verified      INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN verify_token  TEXT",
+    "ALTER TABLE users ADD COLUMN reset_token   TEXT",
+    "ALTER TABLE users ADD COLUMN reset_expires INTEGER",
+    "ALTER TABLE users ADD COLUMN last_login    INTEGER",
+    // projects table — obfuscate column (was added via ALTER TABLE in old code)
+    "ALTER TABLE projects ADD COLUMN obfuscate  INTEGER NOT NULL DEFAULT 1",
+    // projects table — user_id may be NULL in old rows, backfill to admin
+    "UPDATE projects SET user_id = 'admin-1' WHERE user_id IS NULL",
+    "UPDATE licenses SET note = '' WHERE note IS NULL",
+  ];
+
+  for (const sql of migrations) {
+    db.run(sql, (err) => {
+      // "duplicate column name" and "no such column" are expected on fresh DBs — ignore them
+      if (err && !err.message.includes("duplicate column") && !err.message.includes("no such column")) {
+        console.warn("[DB migration]", err.message);
+      }
+    });
+  }
+
+  // Seed admin user — runs after all CREATE TABLE + migration statements
   db.get("SELECT id FROM users WHERE username = 'admin'", (err, row) => {
-    if (row) return _markReady();
+    if (row) {
+      // Ensure existing admin row has the new columns populated
+      db.run(
+        `UPDATE users SET
+           role = COALESCE(role, 'admin'),
+           verified = COALESCE(verified, 1),
+           email = COALESCE(email, 'admin@surfix.local')
+         WHERE username = 'admin'`
+      );
+      return _markReady();
+    }
     const pass = process.env.ADMIN_PASSWORD || "admin123";
     const hash = bcrypt.hashSync(pass, 12);
     db.run(
