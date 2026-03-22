@@ -1,71 +1,73 @@
-const router = require(“express”).Router();
-const db     = require(”../database”);
-const { getObfuscated } = require(”../obf_cache”);
-const { v4: uuidv4 }   = require(“uuid”);
+var router = require(“express”).Router();
+var db = require(”../database”);
+var getObfuscated = require(”../obf_cache”).getObfuscated;
+var uuidv4 = require(“uuid”).v4;
 
-const ALLOWED_PLATFORMS = new Set([“roblox”, “fivem”, “auto”, “unknown”, “other”]);
+var ALLOWED_PLATFORMS = new Set([“roblox”, “fivem”, “auto”, “unknown”, “other”]);
 
 function clientIp(req) {
-return (req.headers[“x-forwarded-for”] || req.socket.remoteAddress || “”)
-.split(”,”)[0]
-.trim()
-.slice(0, 45); // FIXED SEC-13: cap length
+return ((req.headers[“x-forwarded-for”] || req.socket.remoteAddress || “”)
+.split(”,”)[0].trim()).slice(0, 45);
 }
 
-// FIXED SEC-13: validate and sanitize the platform field
 function sanitizePlatform(raw) {
-const p = (raw || “unknown”).toString().toLowerCase().trim().slice(0, 20);
+var p = (raw || “unknown”).toString().toLowerCase().trim().slice(0, 20);
 return ALLOWED_PLATFORMS.has(p) ? p : “unknown”;
 }
 
 async function logAuth(licenseId, projectId, hwid, ip, platform, status, reason) {
+try {
 await db.run(
 “INSERT INTO auth_logs(license_id, project_id, hwid, ip, platform, status, reason) VALUES(?,?,?,?,?,?,?)”,
 [licenseId || null, projectId, hwid || null, ip || null, platform, status, reason || null]
 );
+} catch (e) {
+console.error(”[AUTH LOG]”, e.message);
+}
 }
 
-router.post(
-“/auth”,
-// Apply rate limiter from app.locals (set in index.js)
-(req, res, next) => req.app.locals.limiters.authLimiter(req, res, next),
-async (req, res) => {
-const { key, project, hwid, platform } = req.body || {};
-const ip  = clientIp(req);
-const plat = sanitizePlatform(platform);
+router.post(”/auth”,
+function(req, res, next) { req.app.locals.limiters.authLimiter(req, res, next); },
+async function(req, res) {
+var body = req.body || {};
+var key = body.key;
+var project = body.project;
+var hwid = body.hwid;
+var platform = body.platform;
+var ip = clientIp(req);
+var plat = sanitizePlatform(platform);
 
 ```
 if (!project) return res.status(400).json({ error: "Missing project ID" });
 
 try {
-  const proj = await db.get("SELECT * FROM projects WHERE id = ?", [project]);
+  var proj = await db.get("SELECT * FROM projects WHERE id = ?", [project]);
   if (!proj) return res.status(404).json({ error: "Project not found" });
 
-  // -- FFA path ----------------------------------------------------------
+  // FFA path - no key required
   if (proj.ffa) {
-    const scriptToSend = proj.obfuscate
+    var ffa_script = proj.obfuscate
       ? getObfuscated(proj.id, proj.script_version || 1, proj.script, {
           level: proj.protection_level,
           lightning: !!proj.lightning,
-          silent: !!proj.silent,
+          silent: !!proj.silent
         })
       : proj.script;
     await logAuth(null, project, hwid, ip, plat, "ok", "ffa");
-    return res.json({ success: true, script: scriptToSend, version: proj.version });
+    return res.json({ success: true, script: ffa_script, version: proj.version });
   }
 
-  // -- Licensed path -----------------------------------------------------
+  // Licensed path
   if (!key || !hwid) return res.status(400).json({ error: "Missing key or hwid" });
 
-  // Sanitize HWID - accept only printable ASCII, cap length
-  const safeHwid = String(hwid).replace(/[^\x20-\x7E]/g, "").slice(0, 128);
+  var safeHwid = String(hwid).replace(/[^\x20-\x7E]/g, "").slice(0, 128);
   if (!safeHwid) return res.status(400).json({ error: "Invalid HWID" });
 
-  const license = await db.get(
-    `SELECT l.*, p.script, p.version, p.script_version, p.protection_level,
-            p.lightning, p.silent, p.heartbeat, p.obfuscate
-     FROM licenses l JOIN projects p ON l.project_id = p.id
-     WHERE l.key_value = ? AND l.project_id = ?`,
+  // JOIN brings all project columns into license row
+  var license = await db.get(
+    "SELECT l.*, p.script, p.version, p.script_version, p.protection_level, p.lightning, p.silent, p.heartbeat, p.obfuscate " +
+    "FROM licenses l JOIN projects p ON l.project_id = p.id " +
+    "WHERE l.key_value = ? AND l.project_id = ?",
     [key, project]
   );
 
@@ -78,7 +80,8 @@ try {
     return res.status(403).json({ error: "This license key has been paused" });
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  var now = Math.floor(Date.now() / 1000);
+
   if (license.expires_at && now > license.expires_at) {
     await logAuth(license.id, project, safeHwid, ip, plat, "fail", "key_expired");
     return res.status(403).json({ error: "License key has expired" });
@@ -109,16 +112,17 @@ try {
 
   await logAuth(license.id, project, safeHwid, ip, plat, "ok", null);
 
-  const scriptToSend = license.obfuscate
-    ? getObfuscated(proj.id, license.script_version || 1, license.script, {
+  // FIXED: use license.project_id (not proj.id) and license.script_version etc.
+  // All project columns are available on license via the JOIN above.
+  var scriptToSend = license.obfuscate
+    ? getObfuscated(license.project_id, license.script_version || 1, license.script, {
         level: license.protection_level,
         lightning: !!license.lightning,
-        silent: !!license.silent,
+        silent: !!license.silent
       })
     : license.script;
 
-  const sessionId = uuidv4();
-  // Use INSERT OR IGNORE to avoid duplicate session errors (UNIQUE constraint)
+  var sessionId = uuidv4();
   await db.run(
     "INSERT OR IGNORE INTO active_sessions(id, license_id, session_id, ip) VALUES(?,?,?,?)",
     [uuidv4(), license.id, sessionId, ip]
@@ -126,7 +130,7 @@ try {
 
   res.json({ success: true, script: scriptToSend, version: license.version, session_id: sessionId });
 } catch (err) {
-  console.error("[AUTH]", err);
+  console.error("[AUTH]", err.message);
   res.status(500).json({ error: "Authentication failed" });
 }
 ```
