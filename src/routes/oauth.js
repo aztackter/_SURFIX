@@ -1,32 +1,29 @@
-const router   = require("express").Router();
-const passport = require("passport");
-const jwt      = require("jsonwebtoken");
-
-const JWT_SECRET = process.env.JWT_SECRET;
-const HOST = (process.env.PUBLIC_URL || "http://localhost:3000").replace(/\/$/, "");
-
-function issueAndRedirect(req, res, user) {
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, plan: user.plan },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-  // Pass token to the frontend via a short-lived query param — client stores it immediately
-  res.redirect(`/oauth-success?token=${encodeURIComponent(token)}`);
-}
-
-// ─── Google ───────────────────────────────────────────────────────────────────
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-router.get("/google/callback",
-  passport.authenticate("google", { session: false, failureRedirect: "/?auth_error=google_failed" }),
-  (req, res) => issueAndRedirect(req, res, req.user)
-);
-
-// ─── GitHub ───────────────────────────────────────────────────────────────────
-router.get("/github", passport.authenticate("github", { scope: ["user:email"] }));
-router.get("/github/callback",
-  passport.authenticate("github", { session: false, failureRedirect: "/?auth_error=github_failed" }),
-  (req, res) => issueAndRedirect(req, res, req.user)
-);
-
-module.exports = router;
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Signing you in… — SURFIX</title>
+<style>
+  body{background:#01010c;color:#f2f2ff;font-family:'Syne',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;flex-direction:column;gap:1rem;}
+  .ring{width:52px;height:52px;border-radius:50%;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-right-color:#22d3ee;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  p{color:rgba(255,255,255,.35);font-size:.85rem;letter-spacing:.04em;}
+</style>
+</head>
+<body>
+<div class="ring"></div>
+<p>Signing you in…</p>
+<script>
+  // The token arrives as a query param from the OAuth callback redirect
+  // Store it and forward to the main page
+  const p = new URLSearchParams(window.location.search);
+  const t = p.get('token');
+  if (t) {
+    localStorage.setItem('sf_token', t);
+    window.location.replace('/');
+  } else {
+    window.location.replace('/?auth_error=no_token');
+  }
+</script>
+</body>
+</html>
