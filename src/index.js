@@ -31,7 +31,6 @@ app.use("/api/v1/heartbeat", rateLimit({ windowMs: 60_000, max: 120, standardHea
 app.use("/api/admin/login",  rateLimit({ windowMs: 60_000, max: 10,  standardHeaders: true }));
 
 app.use("/api/public",   require("./routes/public"));
-app.use("/api/loader",   require("./routes/loader"));
 app.use("/api",          require("./routes/loader"));
 app.use("/api/v1",       require("./routes/auth"));
 app.use("/api/v1",       require("./routes/heartbeat"));
