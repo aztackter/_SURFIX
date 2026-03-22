@@ -4,10 +4,12 @@ const SurfixObfuscator = require("../obfuscator");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 if (!process.env.LOADER_SECRET) {
   throw new Error("LOADER_SECRET must be set in environment");
 }
+const LOADER_SECRET = process.env.LOADER_SECRET;
 
 if (!process.env.PUBLIC_URL) {
   throw new Error("PUBLIC_URL must be set in environment");
@@ -17,8 +19,6 @@ const HOST = process.env.PUBLIC_URL.replace(/\/$/, "");
 const MAX_CACHE_SIZE = 500;
 const loaderCache = new Map();
 
-// ─── Template loading ────────────────────────────────────────────────────────
-// Try multiple candidate paths so it works both locally and on Railway.
 function loadTemplate() {
   const candidates = [
     path.join(__dirname, "../templates/loader.html"),
@@ -26,13 +26,9 @@ function loadTemplate() {
     path.join(process.cwd(), "templates/loader.html"),
   ];
   for (const p of candidates) {
-    if (fs.existsSync(p)) {
-      return fs.readFileSync(p, "utf8");
-    }
+    if (fs.existsSync(p)) return fs.readFileSync(p, "utf8");
   }
-  throw new Error(
-    "loader.html template not found. Tried:\n" + candidates.join("\n")
-  );
+  throw new Error("loader.html not found. Tried:\n" + candidates.join("\n"));
 }
 
 let HTML_TEMPLATE;
@@ -43,7 +39,6 @@ try {
   process.exit(1);
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 function escapeLua(str) {
   if (!str) return "";
   return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
@@ -79,33 +74,68 @@ function cacheSet(key, value) {
   loaderCache.set(key, value);
 }
 
-// ─── Browser detection ───────────────────────────────────────────────────────
-// Strategy: default to sending Lua. Only send HTML when we are CERTAIN the
-// request came from a real browser (Accept: text/html AND a mainstream browser
-// UA AND no executor/Roblox signals at all).
+function getRawToken() {
+  const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24)).toString();
+  return crypto
+    .createHmac("sha256", LOADER_SECRET)
+    .update("raw:" + day)
+    .digest("hex")
+    .slice(0, 24);
+}
+
+function getPrevToken() {
+  const day = (Math.floor(Date.now() / (1000 * 60 * 60 * 24)) - 1).toString();
+  return crypto
+    .createHmac("sha256", LOADER_SECRET)
+    .update("raw:" + day)
+    .digest("hex")
+    .slice(0, 24);
+}
+
+function isValidRawToken(token) {
+  if (!token || token.length !== 24) return false;
+  try {
+    return (
+      crypto.timingSafeEqual(Buffer.from(token), Buffer.from(getRawToken())) ||
+      crypto.timingSafeEqual(Buffer.from(token), Buffer.from(getPrevToken()))
+    );
+  } catch {
+    return false;
+  }
+}
+
 const EXECUTOR_UA_RE =
-  /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor|LuaExecutor|Xeno|Solara|Aurora|Swift|Nova|RequestAsync|HttpService/i;
+  /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor|LuaExecutor|Xeno|Solara|Aurora|Swift|Nova|RequestAsync|HttpService/i;
 
 const BROWSER_UA_RE = /Mozilla|Chrome|Safari|Firefox|Edg/i;
 
-function requestIsFromBrowser(req) {
+function shouldServeLua(req) {
+  const rawParam = req.query.raw || "";
+
+  // Token-authenticated executor request — always Lua
+  if (rawParam.length === 24 && isValidRawToken(rawParam)) return true;
+
+  // Legacy flag
+  if (rawParam === "1") return true;
+
   const ua = req.headers["user-agent"] || "";
   const accept = req.headers["accept"] || "";
 
-  // Any executor/Roblox signal → definitely not a browser
-  if (EXECUTOR_UA_RE.test(ua)) return false;
+  // Explicit executor UA → Lua
+  if (EXECUTOR_UA_RE.test(ua)) return true;
 
-  // Must explicitly accept HTML and look like a real browser UA
-  const acceptsHtml = accept.includes("text/html");
-  const looksLikeBrowser = BROWSER_UA_RE.test(ua);
+  // Confident real browser → HTML
+  if (accept.includes("text/html") && BROWSER_UA_RE.test(ua)) return false;
 
-  return acceptsHtml && looksLikeBrowser;
+  // Unknown/empty UA → Lua (safe default)
+  return true;
 }
 
-// ─── Lua loader builder ───────────────────────────────────────────────────────
 function buildRawLoader(project, ffa) {
+  const token = getRawToken();
+  const loaderUrl = `${HOST}/api/loader/${project.id}.lua?raw=${token}`;
+
   return `-- ${escapeLua(project.name)} v${escapeLua(project.version)} | Protected by SURFIX
--- ${ffa ? "FFA Mode: No key required" : "Set your license key below before running"}
 local _KEY = "${ffa ? "FFA" : ""}"
 local _PROJECT = "${escapeLua(project.id)}"
 local _HOST = "${HOST}"
@@ -128,10 +158,10 @@ local function _POST(url, body)
     local hs = game:GetService("HttpService")
     local ok, res = pcall(function()
       return hs:RequestAsync({
-        Url = url,
+        Url    = url,
         Method = "POST",
         Headers = { ["Content-Type"] = "application/json" },
-        Body = hs:JSONEncode(body)
+        Body   = hs:JSONEncode(body)
       })
     end)
     if not ok or not res then return nil end
@@ -141,14 +171,10 @@ local function _POST(url, body)
   return nil
 end
 
-${
-  ffa
-    ? ""
-    : `if _KEY == "" then
-  error("[SURFIX] You must set your license key. Contact the script author.")
+${ffa ? "" : `if _KEY == "" then
+  error("[SURFIX] Set your license key before running this script.")
   return
-end`
-}
+end`}
 
 local _data = _POST(_HOST .. "/api/v1/auth", {
   key      = _KEY,
@@ -158,42 +184,36 @@ local _data = _POST(_HOST .. "/api/v1/auth", {
 })
 
 if not _data then
-  error("[SURFIX] Failed to connect to license server. Check your internet.")
+  error("[SURFIX] Failed to reach license server.")
   return
 end
-
 if _data.error then
   error("[SURFIX] " .. tostring(_data.error))
   return
 end
-
 if not _data.script or _data.script == "" then
-  error("[SURFIX] Received empty or invalid script from server.")
+  error("[SURFIX] Empty response from server.")
   return
 end
 
-local _loader = loadstring or load
-local _fn, _err = _loader(_data.script)
+local _fn, _err = (loadstring or load)(_data.script)
 if not _fn then
-  error("[SURFIX] Script load error: " .. tostring(_err))
+  error("[SURFIX] Load error: " .. tostring(_err))
   return
 end
-
 _fn()`;
 }
 
-// ─── Rate limiter ─────────────────────────────────────────────────────────────
 const loaderLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
-  message: "-- Rate limit exceeded. Please try again later.",
+  message: "-- Rate limit exceeded. Try again later.",
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 router.use(loaderLimiter);
 
-// ─── Main loader route ────────────────────────────────────────────────────────
 router.get("/loader/:projectId.lua", async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -206,97 +226,81 @@ router.get("/loader/:projectId.lua", async (req, res) => {
       "SELECT id, name, version, ffa FROM projects WHERE id = ?",
       [projectId]
     );
-
     if (!project) {
       return res.status(404).type("text/plain").send("-- Project not found");
     }
 
-    // Always prevent caching — we need fresh UA detection every request
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
     const ffa = project.ffa === 1;
 
-    // ── Browser path: return styled HTML ─────────────────────────────────────
-    if (requestIsFromBrowser(req)) {
-      const loaderUrl = `${HOST}/api/loader/${project.id}.lua`;
+    if (shouldServeLua(req)) {
+      const token = getRawToken();
+      const cacheKey = `${project.id}:${project.version}:${token}`;
+      const cached = cacheGet(cacheKey);
 
-      // Encode the URL as hex char codes so it isn't trivially scraped
-      const urlParts = [];
-      for (let i = 0; i < loaderUrl.length; i++) {
-        urlParts.push(loaderUrl.charCodeAt(i).toString(16));
+      if (cached) {
+        res.set("Content-Type", "text/plain; charset=utf-8");
+        return res.send(cached);
       }
-      const partsJson = JSON.stringify(urlParts);
 
-      const html = HTML_TEMPLATE
-        .replace(/__PROJECT_NAME__/g, escapeHtml(project.name))
-        .replace(
-          /__FFA_NOTE__/g,
-          ffa
-            ? "FFA Mode — No license key required"
-            : 'script_key = "YOUR_KEY"; -- A key is required'
-        )
-        .replace(/__PARTS__/g, partsJson);
+      const rawLoader = buildRawLoader(project, ffa);
+      const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
+      const { code } = obfuscator.obfuscate(rawLoader);
 
-      res.set({
-        "Content-Type": "text/html; charset=utf-8",
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "Referrer-Policy": "no-referrer",
-        "Content-Security-Policy":
-          "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'",
-      });
-
-      return res.send(html);
-    }
-
-    // ── Executor / Roblox path: return obfuscated Lua ────────────────────────
-    const cacheKey = `${project.id}:${project.version}:${HOST}`;
-    const cached = cacheGet(cacheKey);
-    if (cached) {
+      cacheSet(cacheKey, code);
       res.set("Content-Type", "text/plain; charset=utf-8");
-      return res.send(cached);
+      return res.send(code);
     }
 
-    const rawLoader = buildRawLoader(project, ffa);
-    const obfuscator = new SurfixObfuscator({
-      level: "light",
-      lightning: false,
-      silent: false,
+    // Browser: serve styled HTML with token-bearing URL embedded
+    const executorUrl = `${HOST}/api/loader/${project.id}.lua?raw=${getRawToken()}`;
+    const urlParts = [];
+    for (let i = 0; i < executorUrl.length; i++) {
+      urlParts.push(executorUrl.charCodeAt(i).toString(16));
+    }
+
+    const html = HTML_TEMPLATE
+      .replace(/__PROJECT_NAME__/g, escapeHtml(project.name))
+      .replace(/__FFA_NOTE__/g, ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
+      .replace(/__PARTS__/g, JSON.stringify(urlParts));
+
+    res.set({
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer",
+      "Content-Security-Policy":
+        "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'",
     });
-    const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
 
-    cacheSet(cacheKey, obfuscatedLoader);
-
-    res.set("Content-Type", "text/plain; charset=utf-8");
-    return res.send(obfuscatedLoader);
+    return res.send(html);
   } catch (err) {
     console.error("[SURFIX] Loader error:", err);
     res.status(500).type("text/plain").send("-- Internal error: " + err.message);
   }
 });
 
-// ─── Cache warm-up ────────────────────────────────────────────────────────────
 async function warmCache() {
   try {
     const projects = await db.all("SELECT id, name, version, ffa FROM projects");
+    const token = getRawToken();
     for (const proj of projects) {
-      const cacheKey = `${proj.id}:${proj.version}:${HOST}`;
+      const cacheKey = `${proj.id}:${proj.version}:${token}`;
       if (!loaderCache.has(cacheKey)) {
         const rawLoader = buildRawLoader(proj, proj.ffa === 1);
-        const obfuscator = new SurfixObfuscator({
-          level: "light",
-          lightning: false,
-          silent: false,
-        });
+        const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
         const { code } = obfuscator.obfuscate(rawLoader);
         cacheSet(cacheKey, code);
       }
     }
-    console.log(`[SURFIX] Loader cache warmed (${projects.length} projects)`);
+    console.log(`[SURFIX] Cache warmed (${projects.length} projects)`);
   } catch (err) {
-    console.error("[SURFIX] Failed to warm loader cache:", err);
+    console.error("[SURFIX] Cache warm failed:", err);
   }
 }
 
