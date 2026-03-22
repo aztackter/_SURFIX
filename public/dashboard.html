@@ -237,12 +237,6 @@
       font-size: 0.75rem;
       color: #4ade80;
     }
-    .checkbox-group {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
     @media (max-width: 768px) {
       body { padding: 1rem; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -290,12 +284,13 @@
       <option value="medium">Medium</option>
       <option value="max" selected>Maximum</option>
     </select>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="projectLightning"> Lightning Mode (faster, fewer checks)</label>
-      <label><input type="checkbox" id="projectSilent"> Silent Mode (suppress console output)</label>
-      <label><input type="checkbox" id="projectFFA"> FFA Mode (no license key required)</label>
-      <label><input type="checkbox" id="projectObfuscate" checked> Enable Obfuscation</label>
-    </div>
+    <label><input type="checkbox" id="projectLightning"> Lightning Mode (faster, fewer checks)</label>
+    <label><input type="checkbox" id="projectSilent"> Silent Mode (suppress console output)</label>
+    <label><input type="checkbox" id="projectFFA"> FFA Mode (no license key required)</label>
+    <label><input type="checkbox" id="projectHeartbeat"> Heartbeat (max concurrent sessions)</label>
+    <input type="number" id="heartbeatLimit" placeholder="Max instances" style="width: 100%; margin-bottom: 1rem;">
+    <label><input type="checkbox" id="projectSourceLocker"> Source Locker (AES-256 encrypt script)</label>
+    <label><input type="checkbox" id="projectObfuscate" checked> 🔒 Enable Obfuscation</label>
     <textarea id="projectScript" rows="8" placeholder="-- Paste your Lua script here&#10;print('Hello, World!')"></textarea>
     <div class="modal-buttons">
       <button onclick="closeModal()">Cancel</button>
@@ -394,7 +389,7 @@
           <div class="project-name">${escapeHtml(p.name)} v${p.version}</div>
           <div class="project-meta">
             Keys: ${p.key_count || 0} | Auths: ${p.total_auths || 0} | Level: ${p.protection_level}
-            ${p.lightning ? ' | ⚡ Lightning' : ''}${p.silent ? ' | 🔇 Silent' : ''}${p.ffa ? ' | 🎯 FFA' : ''}${p.source_locker ? ' | 🔒 Locker' : ''}${p.obfuscate !== false ? ' | 🔐 Obfuscated' : ' | 📄 Plain'}
+            ${p.lightning ? ' | ⚡ Lightning' : ''}${p.silent ? ' | 🔇 Silent' : ''}${p.ffa ? ' | 🎯 FFA' : ''}${p.obfuscate === 0 ? ' | 📄 No Obfuscation' : ' | 🔒 Obfuscated'}
           </div>
           <div class="project-actions">
             <button onclick="editProject('${p.id}')">Edit</button>
@@ -452,6 +447,9 @@
     document.getElementById("projectLightning").checked = false;
     document.getElementById("projectSilent").checked = false;
     document.getElementById("projectFFA").checked = false;
+    document.getElementById("projectHeartbeat").checked = false;
+    document.getElementById("heartbeatLimit").value = "";
+    document.getElementById("projectSourceLocker").checked = false;
     document.getElementById("projectObfuscate").checked = true;
     document.getElementById("projectScript").value = "";
     document.getElementById("projectModal").classList.add("open");
@@ -470,7 +468,10 @@
       document.getElementById("projectLightning").checked = p.lightning === 1;
       document.getElementById("projectSilent").checked = p.silent === 1;
       document.getElementById("projectFFA").checked = p.ffa === 1;
-      document.getElementById("projectObfuscate").checked = p.obfuscate !== false;
+      document.getElementById("projectHeartbeat").checked = p.heartbeat > 0;
+      document.getElementById("heartbeatLimit").value = p.heartbeat || "";
+      document.getElementById("projectSourceLocker").checked = p.source_locker === 1;
+      document.getElementById("projectObfuscate").checked = p.obfuscate !== 0;
       document.getElementById("projectScript").value = p.script || "";
       document.getElementById("projectModal").classList.add("open");
     } catch (err) {
@@ -487,6 +488,8 @@
       lightning: document.getElementById("projectLightning").checked,
       silent: document.getElementById("projectSilent").checked,
       ffa: document.getElementById("projectFFA").checked,
+      heartbeat: document.getElementById("projectHeartbeat").checked ? parseInt(document.getElementById("heartbeatLimit").value) || 3 : 0,
+      source_locker: document.getElementById("projectSourceLocker").checked,
       obfuscate: document.getElementById("projectObfuscate").checked,
       script: document.getElementById("projectScript").value
     };
