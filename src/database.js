@@ -10,7 +10,6 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
   console.error("[FATAL] JWT_SECRET is missing or too short (min 32 chars).");
   process.exit(1);
 }
-
 const LOADER_SECRET  = process.env.LOADER_SECRET  || crypto.createHmac("sha256", JWT_SECRET).update("loader").digest("hex");
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.createHmac("sha256", JWT_SECRET).update("session").digest("hex");
 process.env.LOADER_SECRET  = LOADER_SECRET;
@@ -46,12 +45,34 @@ function _markReady() {
   _readyQ.forEach((fn) => fn());
 }
 
-// ── Step 1: base tables that don't depend on users ────────────────────────────
+// ── Correct users DDL — password is nullable ──────────────────────────────────
+const USERS_DDL = `CREATE TABLE users (
+  id            TEXT PRIMARY KEY,
+  username      TEXT UNIQUE,
+  email         TEXT,
+  password      TEXT,
+  role          TEXT NOT NULL DEFAULT 'user',
+  plan          TEXT NOT NULL DEFAULT 'free',
+  avatar_url    TEXT,
+  verified      INTEGER NOT NULL DEFAULT 0,
+  verify_token  TEXT,
+  reset_token   TEXT,
+  reset_expires INTEGER,
+  api_key       TEXT,
+  created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  last_login    INTEGER
+)`;
+
+// ── Startup sequence ──────────────────────────────────────────────────────────
 db.serialize(() => {
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA foreign_keys = OFF");
   db.run("PRAGMA synchronous = NORMAL");
 
+  // Always clean up any leftover rebuild table from a previous crashed deploy
+  db.run("DROP TABLE IF EXISTS _users_old_rebuild");
+
+  // Non-users tables
   db.run(`CREATE TABLE IF NOT EXISTS projects (
     id               TEXT PRIMARY KEY,
     user_id          TEXT,
@@ -120,93 +141,79 @@ db.serialize(() => {
     UNIQUE(provider, provider_id)
   )`);
 
-  // ── Step 2: users table — rebuild if it has NOT NULL on password ──────────
-  // SQLite cannot ALTER COLUMN to drop constraints.
-  // Strategy: check the stored DDL, rebuild if needed, then continue setup.
-  db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
-    if (err) {
-      console.error("[DB] sqlite_master query failed:", err.message);
-      return;
-    }
+  // Check if users table needs to be rebuilt (password column has NOT NULL)
+  db.get(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'",
+    (err, row) => {
+      if (err) {
+        console.error("[DB] sqlite_master error:", err.message);
+        return;
+      }
 
-    const hasOldConstraint = row && row.sql && (
-      row.sql.toUpperCase().includes("PASSWORD") &&
-      row.sql.toUpperCase().includes("NOT NULL") &&
-      !row.sql.includes("password      TEXT,") &&
-      !row.sql.includes("password TEXT,")
-    );
+      if (!row) {
+        // Fresh database — create correct schema directly
+        db.run(USERS_DDL, (e) => {
+          if (e) console.error("[DB] create users error:", e.message);
+          runMigrationsAndSeed();
+        });
+        return;
+      }
 
-    if (hasOldConstraint) {
-      // Rebuild the table without the NOT NULL constraint
-      console.log("[DB] Rebuilding users table — removing NOT NULL from password...");
+      // Check if the stored DDL has NOT NULL on the password column
+      const sql = row.sql || "";
+      const passwordLine = sql.split("\n").find((l) => l.trim().toLowerCase().startsWith("password"));
+      const needsRebuild = passwordLine && passwordLine.toUpperCase().includes("NOT NULL");
+
+      if (!needsRebuild) {
+        // Already correct schema
+        runMigrationsAndSeed();
+        return;
+      }
+
+      // Rebuild: rename -> create new -> copy -> drop old
+      console.log("[DB] Rebuilding users table to remove NOT NULL from password...");
+
       db.run("ALTER TABLE users RENAME TO _users_old_rebuild", (e1) => {
-        if (e1) { console.error("[DB] rename error:", e1.message); return; }
+        if (e1) {
+          console.error("[DB] rename error:", e1.message);
+          runMigrationsAndSeed(); // continue anyway
+          return;
+        }
 
-        db.run(`CREATE TABLE users (
-          id            TEXT PRIMARY KEY,
-          username      TEXT UNIQUE,
-          email         TEXT,
-          password      TEXT,
-          role          TEXT NOT NULL DEFAULT 'user',
-          plan          TEXT NOT NULL DEFAULT 'free',
-          avatar_url    TEXT,
-          verified      INTEGER NOT NULL DEFAULT 0,
-          verify_token  TEXT,
-          reset_token   TEXT,
-          reset_expires INTEGER,
-          api_key       TEXT,
-          created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-          last_login    INTEGER
-        )`, (e2) => {
-          if (e2) { console.error("[DB] create users error:", e2.message); return; }
+        db.run(USERS_DDL, (e2) => {
+          if (e2) {
+            console.error("[DB] create new users error:", e2.message);
+            // Try to restore the old table name
+            db.run("ALTER TABLE _users_old_rebuild RENAME TO users");
+            runMigrationsAndSeed();
+            return;
+          }
 
+          // Copy existing rows — only columns guaranteed to exist in the old table
           db.run(
-            "INSERT INTO users (id, username, password, role, verified, created_at) " +
-            "SELECT id, username, password, " +
-            "COALESCE(NULLIF(role,''), 'user'), " +
-            "COALESCE(verified, 0), " +
-            "COALESCE(created_at, strftime('%s','now')) " +
+            "INSERT INTO users (id, username, password, created_at) " +
+            "SELECT id, username, password, COALESCE(created_at, strftime('%s','now')) " +
             "FROM _users_old_rebuild",
             (e3) => {
-              if (e3) { console.error("[DB] copy rows error:", e3.message); return; }
-              db.run("DROP TABLE _users_old_rebuild");
-              console.log("[DB] users table rebuild complete.");
-              runMigrationsAndSeed();
+              if (e3) console.error("[DB] copy rows error:", e3.message);
+
+              // Always clean up old table, even if copy had issues
+              db.run("DROP TABLE IF EXISTS _users_old_rebuild", (e4) => {
+                if (e4) console.error("[DB] drop old table error:", e4.message);
+                else console.log("[DB] users table rebuild complete.");
+                runMigrationsAndSeed();
+              });
             }
           );
         });
       });
-    } else if (!row) {
-      // Fresh database — create users with correct schema immediately
-      db.run(`CREATE TABLE users (
-        id            TEXT PRIMARY KEY,
-        username      TEXT UNIQUE,
-        email         TEXT,
-        password      TEXT,
-        role          TEXT NOT NULL DEFAULT 'user',
-        plan          TEXT NOT NULL DEFAULT 'free',
-        avatar_url    TEXT,
-        verified      INTEGER NOT NULL DEFAULT 0,
-        verify_token  TEXT,
-        reset_token   TEXT,
-        reset_expires INTEGER,
-        api_key       TEXT,
-        created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-        last_login    INTEGER
-      )`, (e) => {
-        if (e) console.error("[DB] create users error:", e.message);
-        runMigrationsAndSeed();
-      });
-    } else {
-      // Table exists and already has the correct schema
-      runMigrationsAndSeed();
     }
-  });
+  );
 });
 
-// ── Step 3: column migrations, indexes, backfills, seed ──────────────────────
 function runMigrationsAndSeed() {
   db.serialize(() => {
+    // Add any missing columns (safe to re-run — duplicate column errors ignored)
     const migrations = [
       "ALTER TABLE users ADD COLUMN email         TEXT",
       "ALTER TABLE users ADD COLUMN role          TEXT NOT NULL DEFAULT 'user'",
@@ -221,14 +228,14 @@ function runMigrationsAndSeed() {
       "ALTER TABLE projects ADD COLUMN obfuscate  INTEGER NOT NULL DEFAULT 1",
     ];
     for (const sql of migrations) {
-      db.run(sql, (err) => {
-        if (err && !err.message.includes("duplicate column")) {
-          console.warn("[DB migration]", err.message);
+      db.run(sql, (e) => {
+        if (e && !e.message.includes("duplicate column")) {
+          console.warn("[DB migration]", e.message);
         }
       });
     }
 
-    // Unique email index — partial so NULLs are allowed (OAuth users without email)
+    // Indexes
     db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON users(email) WHERE email IS NOT NULL");
     db.run("CREATE INDEX IF NOT EXISTS idx_lic_key      ON licenses(key_value)");
     db.run("CREATE INDEX IF NOT EXISTS idx_lic_project  ON licenses(project_id)");
@@ -248,7 +255,7 @@ function runMigrationsAndSeed() {
     db.run("UPDATE projects SET obfuscate = 1 WHERE obfuscate IS NULL");
     db.run("UPDATE projects SET user_id = 'admin-1' WHERE user_id IS NULL");
 
-    // Seed / repair admin user
+    // Seed / repair admin
     db.get("SELECT id FROM users WHERE username = 'admin'", (err, row) => {
       if (row) {
         db.run(
