@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>__PROJECT_NAME__ — SURFIX Protected Script</title>
+
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Cache-Control" content="no-store">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <link rel="icon" href="data:,">
+
+  <style>
+    * { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+    body {
+      background: #0a0a0a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: system-ui, monospace;
+      margin: 0;
+      padding: 20px;
+      cursor: default;
+    }
+    .card {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h1 { color: #fff; font-size: 24px; margin-bottom: 12px; }
+    p { color: #888; line-height: 1.6; margin-bottom: 24px; }
+    code {
+      background: #1a1a1a;
+      padding: 12px;
+      border-radius: 8px;
+      display: block;
+      font-family: monospace;
+      font-size: 12px;
+      color: #4ade80;
+      word-break: break-all;
+      margin: 16px 0;
+    }
+    .note { font-size: 12px; color: #666; margin-top: 16px; }
+    a { color: #8b5cf6; text-decoration: none; }
+    .warning {
+      font-size: 11px;
+      color: #ff4444;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #222;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🔒</div>
+    <h1>__PROJECT_NAME__</h1>
+    <p>This is a protected Lua script. It cannot be viewed in a browser.</p>
+
+    <code id="loader-code">loadstring(game:HttpGet(""))()</code>
+
+    <div class="note">
+      <span>📜 Loadstring</span><br>
+      __FFA_NOTE__
+    </div>
+
+    <div class="note">
+      Contents cannot be displayed in a browser • <a href="#">SURFIX</a>
+    </div>
+
+    <div class="warning">⚠️ Protected content — unauthorized access detected</div>
+  </div>
+
+  <script>
+    (function () {
+      const isAutomation =
+        navigator.webdriver ||
+        /HeadlessChrome|PhantomJS|Playwright/.test(navigator.userAgent);
+
+      if (isAutomation) {
+        document.querySelector(".card").innerHTML =
+          "<h1>Access Restricted</h1><p>Automated browsers are not permitted.</p>";
+        return;
+      }
+
+      document.addEventListener("keydown", function (e) {
+        if (
+          e.key === "F12" ||
+          (e.ctrlKey && e.shiftKey && ["I", "J"].includes(e.key)) ||
+          (e.ctrlKey && ["u", "s", "p"].includes(e.key))
+        ) {
+          e.preventDefault();
+        }
+      });
+
+      ["contextmenu", "copy", "cut", "paste", "selectstart", "dragstart"]
+        .forEach(evt =>
+          document.addEventListener(evt, e => e.preventDefault())
+        );
+
+      const parts = __PARTS__;
+      const loaderUrl = String.fromCharCode(
+        ...parts.map(p => parseInt(p, 16))
+      );
+
+      document.getElementById("loader-code").textContent =
+        'loadstring(game:HttpGet("' + loaderUrl + '"))()';
+    })();
+  </script>
+</body>
+</html>
