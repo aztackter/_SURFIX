@@ -156,17 +156,19 @@ router.get("/loader/:projectId.lua", async (req, res) => {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
+    const loaderUrl = `${HOST}/api/loader/${project.id}.lua`;
+    const urlParts = [];
+    for (let i = 0; i < loaderUrl.length; i++) {
+      urlParts.push(loaderUrl.charCodeAt(i).toString(16));
+    }
+    const partsJson = JSON.stringify(urlParts);
+
+    let html = HTML_TEMPLATE
+      .replace(/__PROJECT_NAME__/g, escapeHtml(project.name))
+      .replace(/__FFA_NOTE__/g, ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
+      .replace(/__PARTS__/g, partsJson);
+
     if (isBrowser) {
-      const loaderUrl = `${HOST}/api/loader/${project.id}.lua`;
-      const urlParts = [];
-      for (let i = 0; i < loaderUrl.length; i++) {
-        urlParts.push(loaderUrl.charCodeAt(i).toString(16));
-      }
-      const partsJson = JSON.stringify(urlParts);
-      const html = HTML_TEMPLATE
-        .replace(/__PROJECT_NAME__/g, escapeHtml(project.name))
-        .replace(/__FFA_NOTE__/g, ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
-        .replace(/__PARTS__/g, partsJson);
       res.set({
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
