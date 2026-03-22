@@ -1,805 +1,788 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>SURFIX | Enterprise Lua Protection</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SURFIX — Enterprise Lua Protection</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#01010c;
+  --v:#7c3aed;--v2:#a855f7;--v3:#c084fc;
+  --c:#06b6d4;--c2:#22d3ee;
+  --pk:#ec4899;--pk2:#f472b6;
+  --text:#f2f2ff;--muted:rgba(242,242,255,0.38);
+  --F:'Syne',sans-serif;--M:'Space Mono',monospace;
+}
+html{overflow-x:hidden;scroll-behavior:smooth;}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--F);
+  overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased;
+}
 
-    body {
-      background: #010101;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #ffffff;
-      line-height: 1.5;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+/* ─── LOADER ─── */
+#loader{
+  position:fixed;inset:0;z-index:99999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
+  transition:opacity .8s ease,visibility .8s ease;
+}
+#loader.out{opacity:0;visibility:hidden;}
+.load-ring{
+  width:76px;height:76px;border-radius:50%;
+  border:2px solid rgba(124,58,237,0.15);
+  border-top-color:#7c3aed;border-right-color:#22d3ee;
+  animation:spin .9s linear infinite;
+  display:flex;align-items:center;justify-content:center;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.load-logo{
+  position:absolute;width:44px;height:44px;border-radius:14px;
+  background:linear-gradient(135deg,#7c3aed,#06b6d4);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.load-logo img{width:28px;height:28px;object-fit:contain;filter:brightness(10);}
+.load-track{width:180px;height:2px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;}
+.load-fill{height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#22d3ee);border-radius:2px;transition:width .1s;}
+.load-lbl{font-family:var(--M);font-size:0.65rem;letter-spacing:.2em;color:rgba(255,255,255,0.22);text-transform:uppercase;}
 
-    /* Dynamic gradient background */
-    .gradient-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at 20% 30%, rgba(88, 28, 135, 0.15), transparent 60%),
-                  radial-gradient(circle at 85% 70%, rgba(6, 182, 212, 0.12), transparent 60%),
-                  radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95), #010101);
-      z-index: -2;
-    }
+/* ─── CURSOR ─── */
+#dot{position:fixed;width:7px;height:7px;border-radius:50%;background:var(--c2);pointer-events:none;z-index:99990;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:transform .15s,width .2s,height .2s,opacity .2s;}
+#ring{position:fixed;width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(34,211,238,0.5);pointer-events:none;z-index:99989;transform:translate(-50%,-50%);transition:width .45s cubic-bezier(.2,.9,.4,1.1),height .45s cubic-bezier(.2,.9,.4,1.1),background .3s,border-color .3s;}
+body.hov #dot{width:4px;height:4px;}
+body.hov #ring{width:52px;height:52px;background:rgba(34,211,238,0.04);border-color:rgba(34,211,238,0.8);}
 
-    /* Animated orbs */
-    .orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.4;
-      z-index: -1;
-      animation: float 25s infinite ease-in-out;
-    }
-    .orb-1 { width: 500px; height: 500px; background: #8b5cf6; top: -200px; left: -200px; animation-delay: 0s; }
-    .orb-2 { width: 600px; height: 600px; background: #06b6d4; bottom: -300px; right: -200px; animation-delay: -8s; }
-    .orb-3 { width: 400px; height: 400px; background: #ec4899; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.2; }
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(30px, -30px) scale(1.05); }
-      66% { transform: translate(-20px, 20px) scale(0.95); }
-    }
+/* ─── NOISE ─── */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.026;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px;}
 
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 2rem;
-      position: relative;
-      z-index: 2;
-    }
+/* ─── CANVAS ─── */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+#particles{position:fixed;inset:0;z-index:1;pointer-events:none;}
 
-    /* Premium glass effect */
-    .glass {
-      background: rgba(15, 15, 25, 0.5);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 32px;
-    }
+/* ─── GRID ─── */
+#grid{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(124,58,237,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,58,237,.05) 1px,transparent 1px);
+  background-size:70px 70px;
+  mask-image:radial-gradient(ellipse 85% 75% at 50% 50%,#000 0%,transparent 100%);
+  animation:gridDrift 28s linear infinite;
+}
+@keyframes gridDrift{to{background-position:70px 70px;}}
 
-    .glass-card {
-      background: rgba(12, 12, 20, 0.6);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 28px;
-      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    }
-    .glass-card:hover {
-      border-color: rgba(139, 92, 246, 0.3);
-      transform: translateY(-6px);
-      background: rgba(20, 20, 32, 0.7);
-      box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.5);
-    }
+/* ─── NAV ─── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:66px;padding:0 3rem;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:background .5s,border-color .5s,backdrop-filter .5s;
+  border-bottom:1px solid transparent;
+}
+nav.stuck{background:rgba(1,1,12,.85);border-color:rgba(124,58,237,.12);backdrop-filter:blur(28px);}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.logo-mark{
+  width:38px;height:38px;border-radius:13px;
+  background:linear-gradient(135deg,#7c3aed,#06b6d4);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  position:relative;transition:transform .35s,box-shadow .35s;flex-shrink:0;
+}
+.logo-mark img{width:24px;height:24px;object-fit:contain;filter:brightness(10);position:relative;z-index:1;}
+.logo-mark::after{content:'';position:absolute;inset:-5px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:18px;filter:blur(14px);opacity:0;transition:opacity .35s;}
+.logo:hover .logo-mark{transform:scale(1.1);box-shadow:0 0 30px rgba(124,58,237,.5);}
+.logo:hover .logo-mark::after{opacity:.65;}
+.logo-name{font-size:1.2rem;font-weight:800;letter-spacing:.1em;}
+.nav-mid{display:flex;background:rgba(255,255,255,.034);border:1px solid rgba(255,255,255,.065);border-radius:100px;padding:4px;}
+.nav-mid a{color:rgba(255,255,255,.42);text-decoration:none;font-size:.79rem;font-weight:700;letter-spacing:.05em;padding:7px 17px;border-radius:100px;transition:all .2s;}
+.nav-mid a:hover{color:#fff;background:rgba(255,255,255,.07);}
+.nav-r{display:flex;align-items:center;gap:11px;}
+.nav-disc{color:rgba(255,255,255,.38);text-decoration:none;font-size:.79rem;font-weight:700;letter-spacing:.04em;padding:8px 15px;border-radius:100px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:7px;transition:all .3s;}
+.nav-disc:hover{color:#fff;border-color:rgba(124,58,237,.5);background:rgba(124,58,237,.1);}
+.nav-cta{background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;color:#fff;font-family:var(--F);font-weight:800;font-size:.8rem;letter-spacing:.06em;padding:10px 22px;border-radius:100px;cursor:none;position:relative;overflow:hidden;transition:transform .25s,box-shadow .3s;}
+.nav-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#a855f7,#22d3ee);opacity:0;transition:opacity .3s;}
+.nav-cta:hover{transform:scale(1.06);box-shadow:0 0 36px rgba(124,58,237,.55);}
+.nav-cta:hover::before{opacity:1;}
+.nav-cta span{position:relative;z-index:1;}
 
-    /* Gradient text */
-    .gradient-text {
-      background: linear-gradient(135deg, #c084fc, #22d3ee, #f472b6);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      background-size: 200% 200%;
-      animation: gradientShift 8s ease infinite;
-    }
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
+/* ─── HERO ─── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:110px 3rem 80px;
+  position:relative;z-index:4;
+}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--M);font-size:.68rem;letter-spacing:.18em;
+  color:var(--c2);text-transform:uppercase;font-weight:700;
+  margin-bottom:34px;opacity:0;animation:fup .9s cubic-bezier(.2,.9,.4,1.1) .2s forwards;
+}
+.ep{width:5px;height:5px;border-radius:50%;background:var(--c2);position:relative;}
+.ep::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:var(--c2);opacity:.3;animation:epring 2s ease-in-out infinite;}
+@keyframes epring{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(2.2);opacity:0;}}
+.el{width:30px;height:1px;background:rgba(34,211,238,.5);}
+@keyframes fup{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
 
-    /* iOS-style button */
-    .btn-primary {
-      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-      border: none;
-      padding: 0.875rem 2rem;
-      border-radius: 60px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.3);
-      letter-spacing: -0.2px;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 8px 24px 0 rgba(139, 92, 246, 0.4);
-    }
-    .btn-primary:active {
-      transform: scale(0.98);
-    }
+.h1{font-size:clamp(3.8rem,9vw,8rem);font-weight:800;line-height:.92;letter-spacing:-.047em;margin-bottom:30px;}
+.cl{overflow:hidden;display:block;}
+.ci{display:block;opacity:0;transform:translateY(108%);transition:opacity .01s,transform 1s cubic-bezier(.16,1,.3,1);}
+.ci.in{opacity:1;transform:translateY(0);}
+.cd0{transition-delay:.42s!important;}.cd1{transition-delay:.58s!important;}.cd2{transition-delay:.74s!important;}
+.gt{
+  background:linear-gradient(135deg,#c084fc 0%,#22d3ee 42%,#f472b6 78%,#c084fc 100%);
+  background-size:280% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:gf 5.5s linear infinite;
+}
+@keyframes gf{to{background-position:-280% center;}}
+.ot{-webkit-text-stroke:2px rgba(255,255,255,.16);color:transparent;}
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 0.875rem 2rem;
-      border-radius: 60px;
-      font-weight: 500;
-      color: #e2e8f0;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    }
-    .btn-secondary:hover {
-      border-color: #8b5cf6;
-      background: rgba(139, 92, 246, 0.15);
-      transform: translateY(-2px);
-    }
+.hero-sub{max-width:490px;font-size:1.08rem;color:var(--muted);line-height:1.75;margin-bottom:46px;opacity:0;animation:fup 1s cubic-bezier(.2,.9,.4,1.1) .98s forwards;}
+.hero-btns{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fup 1s cubic-bezier(.2,.9,.4,1.1) 1.1s forwards;}
 
-    /* Navbar */
-    .navbar {
-      padding: 1.25rem 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-      box-shadow: 0 8px 20px -8px rgba(139, 92, 246, 0.4);
-    }
-    .logo-text {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .nav-links {
-      display: flex;
-      gap: 2.5rem;
-      align-items: center;
-    }
-    .nav-links a {
-      color: #94a3b8;
-      text-decoration: none;
-      transition: all 0.2s;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-    .nav-links a:hover {
-      color: #c084fc;
-    }
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:9px;padding:15px 34px;border-radius:100px;font-family:var(--F);font-weight:800;font-size:.92rem;letter-spacing:.025em;cursor:none;border:none;position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.2,.9,.4,1.1),box-shadow .3s;}
+.btn-p{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;}
+.btn-p::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#a855f7,#22d3ee);opacity:0;transition:opacity .3s;}
+.btn-p:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 0 52px rgba(124,58,237,.55),0 18px 44px -10px rgba(0,0,0,.6);}
+.btn-p:hover::before{opacity:1;}
+.btn-p:active{transform:scale(.97);}
+.btn span{position:relative;z-index:1;}
+.btn-g{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.62);backdrop-filter:blur(8px);transition:all .3s;}
+.btn-g:hover{border-color:rgba(124,58,237,.5);color:#fff;background:rgba(124,58,237,.09);transform:translateY(-4px);}
 
-    /* Hero */
-    .hero {
-      text-align: center;
-      padding: 6rem 0 5rem;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(139, 92, 246, 0.12);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 60px;
-      padding: 0.35rem 1rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #c084fc;
-      margin-bottom: 2rem;
-      backdrop-filter: blur(8px);
-    }
-    .hero h1 {
-      font-size: 5rem;
-      font-weight: 800;
-      line-height: 1.05;
-      margin-bottom: 1.5rem;
-      letter-spacing: -0.03em;
-    }
-    .hero p {
-      font-size: 1.2rem;
-      color: #94a3b8;
-      max-width: 550px;
-      margin: 0 auto 2rem;
-    }
-    .hero-buttons {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+/* scroll cue */
+.scue{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;opacity:0;animation:fup .8s ease 1.7s forwards;color:rgba(255,255,255,.17);font-family:var(--M);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;}
+.sline{width:1px;height:48px;background:linear-gradient(to bottom,rgba(124,58,237,.9),transparent);animation:sc 2.2s ease-in-out infinite;}
+@keyframes sc{0%,100%{transform:scaleY(1);opacity:.4}50%{transform:scaleY(.55);opacity:1}}
 
-    /* Terminal */
-    .terminal {
-      background: rgba(0, 0, 0, 0.5);
-      border-radius: 24px;
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      overflow: hidden;
-      margin: 3rem 0;
-      backdrop-filter: blur(10px);
-    }
-    .terminal-header {
-      background: rgba(0, 0, 0, 0.5);
-      padding: 0.9rem 1.2rem;
-      display: flex;
-      gap: 0.6rem;
-      border-bottom: 1px solid rgba(139, 92, 246, 0.15);
-    }
-    .terminal-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #ff5f56;
-    }
-    .terminal-dot:nth-child(2) { background: #ffbd2e; }
-    .terminal-dot:nth-child(3) { background: #27c93f; }
-    .terminal-body {
-      padding: 1.5rem;
-      font-family: 'SF Mono', 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: #a855f7;
-    }
-    .terminal-line {
-      margin-bottom: 0.5rem;
-      display: flex;
-      gap: 0.75rem;
-    }
-    .prompt { color: #22d3ee; }
-    .output { color: #94a3b8; }
+/* ─── SECTIONS ─── */
+.sec{position:relative;z-index:4;padding:0 3rem 100px;}
+.eyebrow2{font-family:var(--M);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--v3);display:flex;align-items:center;gap:11px;margin-bottom:16px;}
+.eyebrow2::after{content:'';flex:1;max-width:180px;height:1px;background:linear-gradient(90deg,rgba(124,58,237,.5),transparent);}
+.sec-h{font-size:clamp(2.2rem,4.5vw,3.7rem);font-weight:800;letter-spacing:-.035em;line-height:1.05;margin-bottom:52px;}
 
-    /* Features */
-    .features {
-      padding: 5rem 0;
-    }
-    .section-title {
-      text-align: center;
-      font-size: 2.8rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      letter-spacing: -0.02em;
-    }
-    .section-sub {
-      text-align: center;
-      color: #94a3b8;
-      margin-bottom: 3.5rem;
-      font-size: 1.1rem;
-    }
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-    .feature-card {
-      padding: 2rem;
-      text-align: left;
-    }
-    .feature-icon {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(6, 182, 212, 0.1));
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1.25rem;
-      font-size: 1.5rem;
-      border: 1px solid rgba(139, 92, 246, 0.2);
-    }
-    .feature-card h3 {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
-    .feature-card p {
-      color: #94a3b8;
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
+/* ─── TERMINAL ─── */
+.tsec{position:relative;z-index:4;padding:0 3rem 100px;display:flex;justify-content:center;}
+.t3w{perspective:1500px;width:100%;max-width:800px;}
+.t3e{transform:rotateX(12deg) rotateY(-1.5deg) scale(.96);transform-origin:center top;transition:transform 1.4s cubic-bezier(.2,.9,.4,1.1),opacity .9s;opacity:0;}
+.t3e.vis{opacity:1;transform:rotateX(0) rotateY(0) scale(1);}
+.tg-wrap{position:relative;}
+.tg{position:absolute;inset:-3px;border-radius:28px;background:linear-gradient(135deg,rgba(124,58,237,.7),rgba(6,182,212,.5),rgba(236,72,153,.5));filter:blur(4px);z-index:-1;animation:tgp 4.5s ease-in-out infinite;}
+@keyframes tgp{0%,100%{opacity:.4;filter:blur(4px);}50%{opacity:1;filter:blur(11px);}}
+.tbox{background:rgba(3,3,16,.97);border-radius:24px;border:1px solid rgba(124,58,237,.18);overflow:hidden;position:relative;}
+.tbox::after{content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(124,58,237,.5),rgba(6,182,212,.5),transparent);animation:tscan 4.5s linear infinite;opacity:.45;pointer-events:none;}
+@keyframes tscan{0%{top:0}100%{top:100%}}
+.tbar{background:rgba(0,0,0,.55);padding:13px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.04);}
+.tdot{width:13px;height:13px;border-radius:50%;}
+.td1{background:#ff5f56;}.td2{background:#ffbd2e;}.td3{background:#27c93f;}
+.ttabs{display:flex;gap:2px;margin-left:15px;}
+.ttab{font-family:var(--M);font-size:.67rem;padding:4px 13px;border-radius:8px;color:rgba(255,255,255,.2);transition:all .2s;}
+.ttab.on{background:rgba(124,58,237,.2);color:var(--v3);}
+.tver{margin-left:auto;font-family:var(--M);font-size:.63rem;color:rgba(255,255,255,.17);}
+.tbody{padding:22px 26px;font-family:var(--M);font-size:.8rem;line-height:1.9;min-height:240px;}
+.tl{display:flex;gap:11px;align-items:baseline;opacity:0;transform:translateX(-10px);transition:all .38s cubic-bezier(.2,.9,.4,1.1);}
+.tl.in{opacity:1;transform:translateX(0);}
+.cp{color:var(--c2);}.ck{color:var(--v3);}.cs{color:#86efac;}.cc{color:#374151;font-style:italic;}.cok{color:#4ade80;font-weight:700;}.cn{color:#fbbf24;}.cd{color:rgba(255,255,255,.17);}
 
-    /* Stats */
-    .stats {
-      display: flex;
-      justify-content: center;
-      gap: 5rem;
-      padding: 3rem;
-      margin: 2rem 0;
-      flex-wrap: wrap;
-      border-radius: 48px;
-    }
-    .stat-item {
-      text-align: center;
-    }
-    .stat-number {
-      font-size: 2.8rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #c084fc, #22d3ee);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .stat-label {
-      color: #64748b;
-      font-size: 0.85rem;
-      margin-top: 0.25rem;
-    }
+/* ─── BENTO ─── */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:13px;}
+.bc{
+  border-radius:22px;padding:27px;
+  background:rgba(5,5,20,.76);border:1px solid rgba(255,255,255,.055);
+  position:relative;overflow:hidden;
+  transition:transform .45s cubic-bezier(.2,.9,.4,1.1),border-color .35s,box-shadow .4s;
+}
+.bc::before{content:'';position:absolute;inset:0;border-radius:22px;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(124,58,237,.13) 0%,transparent 52%);opacity:0;transition:opacity .4s;pointer-events:none;}
+.bc::after{content:'';position:absolute;inset:0;border-radius:22px;background:linear-gradient(135deg,rgba(255,255,255,.02),transparent 60%);pointer-events:none;}
+.bc:hover{transform:translateY(-7px) scale(1.005);border-color:rgba(124,58,237,.28);box-shadow:0 28px 60px -16px rgba(0,0,0,.7),0 0 0 1px rgba(124,58,237,.1);}
+.bc:hover::before{opacity:1;}
+.s3{grid-column:span 3;}.s4{grid-column:span 4;}.s6{grid-column:span 6;}.s8{grid-column:span 8;}.s9{grid-column:span 9;}.s12{grid-column:span 12;}
+.bic{width:50px;height:50px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:17px;flex-shrink:0;}
+.bv{background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.28);}
+.bc2{background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.24);}
+.bp{background:rgba(236,72,153,.12);border:1px solid rgba(236,72,153,.24);}
+.bg2{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.24);}
+.ba{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.24);}
+.br{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.22);}
+.bc h3{font-size:1.08rem;font-weight:700;letter-spacing:-.01em;margin-bottom:6px;}
+.bc p{color:rgba(255,255,255,.34);font-size:.84rem;line-height:1.58;}
 
-    /* Footer */
-    .footer {
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 3rem 0 2rem;
-      margin-top: 4rem;
-      text-align: center;
-    }
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-    .footer-links a {
-      color: #94a3b8;
-      text-decoration: none;
-      font-size: 0.85rem;
-      transition: color 0.2s;
-    }
-    .footer-links a:hover {
-      color: #c084fc;
-    }
-    .footer p {
-      color: #64748b;
-      font-size: 0.8rem;
-    }
-    .footer .heart {
-      color: #ec4899;
-    }
+/* layer bars */
+.ls{margin-top:20px;display:flex;flex-direction:column;gap:5px;}
+.lb{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:11px;font-size:.72rem;font-weight:700;letter-spacing:.03em;font-family:var(--M);position:relative;overflow:hidden;transition:transform .2s;}
+.lb:hover{transform:translateX(5px);}
+.lb1{background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.27);color:#c084fc;}
+.lb2{background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.22);color:#22d3ee;}
+.lb3{background:rgba(236,72,153,.12);border:1px solid rgba(236,72,153,.22);color:#f472b6;}
+.lb4{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399;}
+.lb5{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:#fbbf24;}
+.lb6{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;}
+.lb7{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);color:#a78bfa;}
+.lf{position:absolute;left:0;top:0;bottom:0;opacity:.09;border-radius:11px;}
+.lf1{background:linear-gradient(90deg,#7c3aed,transparent);}
+.lf2{background:linear-gradient(90deg,#06b6d4,transparent);}
+.lf3{background:linear-gradient(90deg,#ec4899,transparent);}
+.lf4{background:linear-gradient(90deg,#10b981,transparent);}
+.lf5{background:linear-gradient(90deg,#f59e0b,transparent);}
+.lf6{background:linear-gradient(90deg,#ef4444,transparent);}
+.lf7{background:linear-gradient(90deg,#a78bfa,transparent);}
+.ln{width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:.61rem;flex-shrink:0;}
 
-    /* Modals */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(16px);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: rgba(12, 12, 20, 0.95);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 40px;
-      padding: 2rem;
-      max-width: 480px;
-      width: 90%;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-    .modal-content h2 {
-      font-size: 1.8rem;
-      margin-bottom: 1.5rem;
-      letter-spacing: -0.02em;
-    }
-    .modal-content input, .modal-content textarea {
-      width: 100%;
-      padding: 0.9rem 1rem;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 24px;
-      color: white;
-      font-size: 0.95rem;
-      margin-bottom: 1rem;
-      transition: all 0.2s;
-    }
-    .modal-content input:focus, .modal-content textarea:focus {
-      outline: none;
-      border-color: #8b5cf6;
-      background: rgba(0, 0, 0, 0.6);
-    }
-    .close-modal {
-      float: right;
-      cursor: pointer;
-      color: #94a3b8;
-      font-size: 1.5rem;
-      transition: color 0.2s;
-    }
-    .close-modal:hover { color: #fff; }
+/* opcode rows */
+.or{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-family:var(--M);font-size:.73rem;}
+.ol{color:var(--v3);width:85px;flex-shrink:0;}
+.ot2{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.05);overflow:hidden;}
+.ob{height:100%;border-radius:3px;width:0%;transition:width 1.3s cubic-bezier(.2,.9,.4,1.1);}
+.oh{color:rgba(255,255,255,.2);font-size:.63rem;width:50px;text-align:right;}
 
-    /* TOS Content */
-    .tos-content {
-      max-height: 60vh;
-      overflow-y: auto;
-      padding-right: 0.5rem;
-    }
-    .tos-content h3 {
-      color: #c084fc;
-      margin: 1.2rem 0 0.5rem;
-      font-size: 1.1rem;
-    }
-    .tos-content p {
-      color: #94a3b8;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      margin-bottom: 0.8rem;
-    }
+/* tags */
+.tag{display:inline-flex;align-items:center;font-family:var(--M);font-size:.66rem;border-radius:8px;padding:4px 10px;font-weight:700;margin:2px;}
+.tv{background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.25);color:#c084fc;}
+.tc{background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.22);color:#22d3ee;}
+.tp{background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.22);color:#f472b6;}
+.tg2{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#34d399;}
 
-    /* Obfuscator section */
-    #obfuscatorSection {
-      margin: 2rem 0;
-    }
-    textarea {
-      width: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 20px;
-      padding: 1rem;
-      color: white;
-      font-family: 'SF Mono', monospace;
-      font-size: 0.85rem;
-      resize: vertical;
-    }
-    select {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 40px;
-      padding: 0.6rem 1rem;
-      color: white;
-      font-size: 0.85rem;
-      cursor: pointer;
-    }
-    .checkbox-group {
-      display: flex;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      margin: 1rem 0;
-    }
-    .checkbox-group label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      font-size: 0.85rem;
-      color: #94a3b8;
-    }
+/* HB */
+.hb-p{fill:none;stroke:var(--c2);stroke-width:1.8;stroke-dasharray:900;stroke-dashoffset:900;transition:stroke-dashoffset 2.8s cubic-bezier(.2,.9,.4,1.1);}
+.hb-g{fill:none;stroke:var(--c2);stroke-width:7;opacity:.1;stroke-dasharray:900;stroke-dashoffset:900;transition:stroke-dashoffset 2.8s cubic-bezier(.2,.9,.4,1.1);}
+.hbd .hb-p,.hbd .hb-g{stroke-dashoffset:0;}
 
-    @media (max-width: 768px) {
-      .container { padding: 0 1rem; }
-      .hero h1 { font-size: 2.8rem; }
-      .nav-links { display: none; }
-      .stats { gap: 2rem; }
-      .feature-grid { grid-template-columns: 1fr; }
-      .section-title { font-size: 2rem; }
-    }
-  </style>
+/* ─── STATS ─── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);background:rgba(5,5,20,.76);border-radius:22px;border:1px solid rgba(255,255,255,.055);overflow:hidden;position:relative;z-index:4;margin:0 3rem 100px;}
+.st{padding:38px 26px;text-align:center;border-right:1px solid rgba(255,255,255,.045);position:relative;overflow:hidden;transition:background .35s;}
+.st:last-child{border-right:none;}
+.st::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 110%,rgba(124,58,237,.2),transparent 65%);opacity:0;transition:opacity .4s;}
+.st:hover{background:rgba(124,58,237,.04);}
+.st:hover::before{opacity:1;}
+.stn{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,#c084fc,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1;margin-bottom:6px;}
+.stl{font-size:.7rem;color:rgba(255,255,255,.26);font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+
+/* ─── CTA ─── */
+.ctasec{position:relative;z-index:4;padding:0 3rem 100px;text-align:center;}
+.cta-box{border-radius:28px;padding:76px 52px;background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(6,182,212,.07));border:1px solid rgba(124,58,237,.18);position:relative;overflow:hidden;}
+.cta-box::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.22),transparent 65%);pointer-events:none;}
+.cta-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,.5),rgba(6,182,212,.5),transparent);}
+
+/* ─── FOOTER ─── */
+footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.fl{display:flex;align-items:center;gap:9px;font-family:var(--M);font-size:.68rem;color:rgba(255,255,255,.2);}
+.flm{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.flm img{width:15px;height:15px;object-fit:contain;filter:brightness(10);}
+.fr{display:flex;gap:18px;}
+.fr a{color:rgba(255,255,255,.22);text-decoration:none;font-size:.77rem;transition:color .2s;}
+.fr a:hover{color:var(--v3);}
+
+/* ─── REVEAL ─── */
+.rev{opacity:0;transform:translateY(34px);transition:opacity .9s cubic-bezier(.2,.9,.4,1.1),transform .9s cubic-bezier(.2,.9,.4,1.1);}
+.rev.in{opacity:1;transform:translateY(0);}
+.rd1{transition-delay:.08s;}.rd2{transition-delay:.17s;}.rd3{transition-delay:.26s;}.rd4{transition-delay:.35s;}
+
+/* ─── MODALS ─── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(28px);z-index:9999;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;}
+.modal.open{display:flex;}
+.modal.vis{opacity:1;}
+.mbox{background:rgba(5,5,20,.97);border:1px solid rgba(124,58,237,.22);border-radius:26px;padding:38px;max-width:420px;width:92%;position:relative;transform:scale(.93) translateY(18px);transition:transform .4s cubic-bezier(.2,.9,.4,1.1);}
+.modal.vis .mbox{transform:scale(1) translateY(0);}
+.mclose{position:absolute;top:15px;right:18px;background:none;border:none;color:rgba(255,255,255,.24);font-size:1.45rem;cursor:none;line-height:1;transition:color .2s;}
+.mclose:hover{color:#fff;}
+.mh{font-size:1.5rem;font-weight:800;letter-spacing:-.025em;background:linear-gradient(135deg,#c084fc,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:22px;}
+.mf{width:100%;padding:13px 16px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:#fff;font-family:var(--F);font-size:.92rem;outline:none;margin-bottom:11px;transition:border-color .2s;}
+.mf:focus{border-color:rgba(124,58,237,.55);}
+.mbtn{width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;border-radius:13px;color:#fff;font-family:var(--F);font-weight:800;font-size:.95rem;cursor:none;letter-spacing:.03em;transition:opacity .2s,transform .2s;}
+.mbtn:hover{opacity:.9;transform:scale(1.01);}
+.merr{color:#f87171;text-align:center;margin-top:9px;font-size:.82rem;min-height:18px;}
+.tos-h{color:var(--v3);margin:13px 0 4px;font-size:.93rem;}
+.tos-p{color:rgba(255,255,255,.44);font-size:.83rem;line-height:1.62;}
+.cf{width:100%;padding:12px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:#86efac;font-family:var(--M);font-size:.77rem;resize:vertical;outline:none;margin-bottom:11px;}
+.sf{width:100%;padding:11px 15px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:var(--v3);font-family:var(--F);font-size:.86rem;margin-bottom:11px;outline:none;cursor:none;}
+.crow{display:flex;gap:18px;margin-bottom:18px;}
+.crow label{display:flex;align-items:center;gap:7px;font-size:.82rem;color:rgba(255,255,255,.38);cursor:none;}
+
+@media(max-width:768px){
+  nav{padding:0 1.2rem;} .hero{padding:100px 1.2rem 80px;}
+  .tsec,.sec,.ctasec{padding-left:1.2rem;padding-right:1.2rem;}
+  .stats{margin-left:1.2rem;margin-right:1.2rem;grid-template-columns:repeat(2,1fr);}
+  .st{border-bottom:1px solid rgba(255,255,255,.04);}
+  .h1{font-size:clamp(3rem,12vw,5rem);}
+  .s3,.s4,.s6,.s8,.s9{grid-column:span 12;}
+  .nav-mid,.nav-disc{display:none;}
+}
+</style>
 </head>
 <body>
-  <div class="gradient-bg"></div>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
 
-  <div class="container">
-    <!-- Navbar -->
-    <nav class="navbar">
-      <div class="logo">
-        <div class="logo-icon">
-          <i class="fas fa-shield-haltered"></i>
-        </div>
-        <span class="logo-text gradient-text">SURFIX</span>
-      </div>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#" onclick="openModal('tosModal')">Terms</a>
-        <a href="https://discord.gg/hq5t5XCZw" target="_blank" rel="noopener noreferrer"><i class="fab fa-discord"></i> Discord</a>
-        <button class="btn-secondary" style="padding: 0.5rem 1.2rem;" onclick="openModal('loginModal')">Sign In</button>
-      </div>
-    </nav>
-
-    <!-- Hero -->
-    <section class="hero">
-      <div class="hero-badge">
-        <i class="fas fa-crown"></i> Enterprise Grade Protection
-      </div>
-      <h1>
-        Protect Your Lua Scripts<br>
-        <span class="gradient-text">With Military-Grade Security</span>
-      </h1>
-      <p>
-        7-layer obfuscation • Custom VM • Anti-Tamper • License Management
-      </p>
-      <div class="hero-buttons">
-        <button class="btn-primary" onclick="scrollToObfuscator()">
-          <i class="fas fa-bolt"></i> Obfuscate Now
-        </button>
-        <button class="btn-secondary" onclick="openModal('loginModal')">
-          <i class="fas fa-user-shield"></i> Admin Login
-        </button>
-      </div>
-    </section>
-
-    <!-- Terminal Preview -->
-    <div class="terminal">
-      <div class="terminal-header">
-        <div class="terminal-dot"></div>
-        <div class="terminal-dot"></div>
-        <div class="terminal-dot"></div>
-        <span style="margin-left: auto; font-size: 0.7rem; color: #64748b;">surfix — v4.1.0</span>
-      </div>
-      <div class="terminal-body">
-        <div class="terminal-line"><span class="prompt">$</span> surfix protect script.lua --level max</div>
-        <div class="terminal-line"><span class="output">→ Loading source (2.4 KB)...</span></div>
-        <div class="terminal-line"><span class="output">→ String encryption (AES-256-GCM) ✓</span></div>
-        <div class="terminal-line"><span class="output">→ Control flow flattening ✓</span></div>
-        <div class="terminal-line"><span class="output">→ VM bytecode generation ✓</span></div>
-        <div class="terminal-line"><span class="output">→ Anti-tamper injection ✓</span></div>
-        <div class="terminal-line"><span class="output">→ Cache pre-generated [8 variants] ✓</span></div>
-        <div class="terminal-line"><span class="prompt" style="color: #27c93f;">✔</span> <span style="color: #27c93f;">Protected script ready (18.7 KB)</span></div>
-      </div>
-    </div>
-
-    <!-- Obfuscator Section -->
-    <div id="obfuscatorSection" style="display: none;">
-      <div class="glass-card" style="padding: 2rem;">
-        <h2 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem;">⚡ Obfuscate Your Script</h2>
-        <textarea id="inputScript" rows="8" placeholder="-- Paste your Lua script here&#10;print('Hello World')&#10;local x = 100&#10;for i = 1, 10 do&#10;  x = x + i&#10;end"></textarea>
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;">
-          <select id="protectionLevel">
-            <option value="light">Light — XOR + Integrity</option>
-            <option value="medium">Medium — + String Table</option>
-            <option value="max" selected>Maximum — + VM + Anti-Tamper</option>
-          </select>
-        </div>
-        <div class="checkbox-group">
-          <label><input type="checkbox" id="lightning"> ⚡ Lightning Mode (faster, fewer checks)</label>
-          <label><input type="checkbox" id="silent"> 🔇 Silent Mode (suppress console output)</label>
-        </div>
-        <button class="btn-primary" onclick="obfuscateScript()" style="width: 100%;">🚀 Obfuscate Script</button>
-        <div id="obfuscateResult" style="margin-top: 1.5rem;"></div>
-      </div>
-    </div>
-
-    <!-- Features -->
-    <div class="features" id="features">
-      <h2 class="section-title">Enterprise-Grade <span class="gradient-text">Protection</span></h2>
-      <p class="section-sub">Used by top developers to secure their Lua scripts</p>
-      <div class="feature-grid">
-        <div class="glass-card feature-card"><div class="feature-icon"><i class="fas fa-microchip"></i></div><h3>Custom Virtual Machine</h3><p>Bytecode virtualization with randomized opcodes. Each obfuscation produces a unique VM.</p></div>
-        <div class="glass-card feature-card"><div class="feature-icon"><i class="fas fa-code-branch"></i></div><h3>Control Flow Flattening</h3><p>State machine transformation that makes logic impossible to trace.</p></div>
-        <div class="glass-card feature-card"><div class="feature-icon"><i class="fas fa-shield-haltered"></i></div><h3>Anti-Tamper & Anti-Debug</h3><p>Integrity checks, debugger detection, and self-verification at runtime.</p></div>
-        <div class="glass-card feature-card"><div class="feature-icon"><i class="fas fa-key"></i></div><h3>License Management</h3><p>HWID locking, Discord binding, expiration dates, usage limits, key_days, auth_expire.</p></div>
-        <div class="glass-card feature-card"><div class="feature-icon"><i class="fas fa-bolt"></i></div><h3>Obfuscation Cache</h3><p>8 pre-generated variants per script version. 20-80x faster response times.</p></div>
-        <div class="glass-card feature-card"><div class="feature-icon"><i class="fas fa-heartbeat"></i></div><h3>Heartbeat System</h3><p>Enforce concurrent session limits with active session tracking.</p></div>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="glass stats">
-      <div class="stat-item"><div class="stat-number">7</div><div class="stat-label">Protection Layers</div></div>
-      <div class="stat-item"><div class="stat-number">8x</div><div class="stat-label">Variant Cache</div></div>
-      <div class="stat-item"><div class="stat-number">24/7</div><div class="stat-label">License Server</div></div>
-      <div class="stat-item"><div class="stat-number">HWID</div><div class="stat-label">Hardware Locking</div></div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="footer-links">
-        <a href="#" onclick="openModal('tosModal')">Terms of Service</a>
-        <a href="#" onclick="openModal('privacyModal')">Privacy Policy</a>
-        <a href="https://discord.gg/hq5t5XCZw" target="_blank" rel="noopener noreferrer"><i class="fab fa-discord"></i> Discord Community</a>
-        <a href="#" onclick="scrollToObfuscator()">Obfuscator</a>
-      </div>
-      <p>&copy; 2024-2025 SURFIX. All rights reserved.</p>
-      <p>Made with <span class="heart">❤️</span> by <strong style="color: #c084fc;">XZX HUB</strong></p>
-    </footer>
-  </div>
-
-  <!-- Login Modal -->
-  <div id="loginModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closeModal('loginModal')">&times;</span>
-      <h2 class="gradient-text">Welcome Back</h2>
-      <input type="text" id="loginUsername" placeholder="Username" value="admin">
-      <input type="password" id="loginPassword" placeholder="Password">
-      <button class="btn-primary" onclick="adminLogin()" style="width: 100%;">Sign In</button>
-      <div id="loginError" style="color: #ef4444; margin-top: 1rem; text-align: center;"></div>
+<!-- LOADER -->
+<div id="loader">
+  <div style="position:relative;width:76px;height:76px;">
+    <div class="load-ring"></div>
+    <div class="load-logo" style="position:absolute;inset:0;margin:auto;width:44px;height:44px;">
+      <img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" alt="S">
     </div>
   </div>
+  <div class="load-track"><div class="load-fill" id="lf"></div></div>
+  <div class="load-lbl" id="ll">Initializing…</div>
+</div>
 
-  <!-- Terms of Service Modal -->
-  <div id="tosModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <span class="close-modal" onclick="closeModal('tosModal')">&times;</span>
-      <h2 class="gradient-text">Terms of Service</h2>
-      <div class="tos-content">
-        <p><strong>Last Updated:</strong> March 21, 2025</p>
-        
-        <h3>1. Acceptance of Terms</h3>
-        <p>By accessing or using SURFIX ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
-        
-        <h3>2. Service Description</h3>
-        <p>SURFIX provides Lua script obfuscation, license management, and related security services. The Service is intended for legitimate script protection only.</p>
-        
-        <h3>3. Prohibited Uses</h3>
-        <p>You may not use SURFIX to obfuscate or distribute malware, viruses, malicious code, or any software intended to harm or exploit others. Violations will result in immediate account termination and may be reported to authorities.</p>
-        
-        <h3>4. License Keys & HWID Locking</h3>
-        <p>License keys are non-transferable. HWID locking binds keys to specific hardware. Attempting to bypass HWID locks or share keys violates these terms and will result in permanent ban.</p>
-        
-        <h3>5. Source Locker</h3>
-        <p>If you use Source Locker, your script is encrypted before reaching our servers. The one-time seed is your responsibility. Lost seeds cannot be recovered.</p>
-        
-        <h3>6. Fair Use & Rate Limits</h3>
-        <p>API endpoints are rate-limited (30 auth requests per minute per IP). Abuse will result in temporary or permanent suspension.</p>
-        
-        <h3>7. No Warranty</h3>
-        <p>The Service is provided "as is" without warranties of any kind. We do not guarantee that obfuscated scripts will be undetectable or immune to reverse engineering.</p>
-        
-        <h3>8. Limitation of Liability</h3>
-        <p>In no event shall SURFIX or XZX HUB be liable for any indirect, incidental, or consequential damages arising from use of the Service.</p>
-        
-        <h3>9. Modifications</h3>
-        <p>We reserve the right to modify these terms at any time. Continued use constitutes acceptance of modified terms.</p>
-        
-        <h3>10. Contact</h3>
-        <p>For questions or concerns, join our Discord: <a href="https://discord.gg/hq5t5XCZw" target="_blank" style="color: #c084fc;">https://discord.gg/hq5t5XCZw</a></p>
-      </div>
-      <button class="btn-secondary" onclick="closeModal('tosModal')" style="width: 100%; margin-top: 1rem;">I Understand</button>
-    </div>
+<!-- CURSOR -->
+<div id="dot"></div>
+<div id="ring"></div>
+
+<!-- BG -->
+<canvas id="bg"></canvas>
+<canvas id="particles"></canvas>
+<div id="grid"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="logo">
+    <div class="logo-mark"><img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" alt="SURFIX"></div>
+    <span class="logo-name">SURFIX</span>
+  </a>
+  <div class="nav-mid">
+    <a href="#features">Features</a>
+    <a href="#" class="jtos">Terms</a>
+    <a href="#" class="jobf">Obfuscate</a>
   </div>
-
-  <!-- Privacy Policy Modal -->
-  <div id="privacyModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <span class="close-modal" onclick="closeModal('privacyModal')">&times;</span>
-      <h2 class="gradient-text">Privacy Policy</h2>
-      <div class="tos-content">
-        <h3>Information We Collect</h3>
-        <p><strong>License Keys:</strong> We store license keys and associated HWID data to enforce licensing.<br>
-        <strong>IP Addresses:</strong> Logged for security and rate limiting.<br>
-        <strong>Scripts:</strong> If Source Locker is disabled, scripts are stored in encrypted form. If Source Locker is enabled, we only store the encrypted version and never see plaintext.<br>
-        <strong>Auth Logs:</strong> We log all authentication attempts for security auditing.</p>
-        
-        <h3>How We Use Data</h3>
-        <p>Data is used solely to provide the Service, enforce licensing, and prevent abuse. We do not sell or share your data with third parties except as required by law.</p>
-        
-        <h3>Data Retention</h3>
-        <p>Auth logs are retained for 90 days. Project data persists until you delete it. You may request data deletion by contacting us on Discord.</p>
-        
-        <h3>Security</h3>
-        <p>All data is encrypted at rest. Passwords are bcrypt-hashed. Source Locker uses AES-256-GCM with seeds that never touch our servers.</p>
-        
-        <h3>Contact</h3>
-        <p>For privacy concerns: <a href="https://discord.gg/hq5t5XCZw" target="_blank" style="color: #c084fc;">Discord</a></p>
-      </div>
-      <button class="btn-secondary" onclick="closeModal('privacyModal')" style="width: 100%; margin-top: 1rem;">Close</button>
-    </div>
+  <div class="nav-r">
+    <a href="https://discord.gg/hq5t5XCZw" class="nav-disc" target="_blank">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.08.11 18.1.132 18.116a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+      Discord
+    </a>
+    <button class="nav-cta jlogin"><span>Sign In</span></button>
   </div>
+</nav>
 
-  <script>
-    let token = localStorage.getItem("surfix_token") || "";
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">
+    <span class="el"></span><span class="ep"></span>
+    Enterprise Grade &nbsp;·&nbsp; v4.1.0
+    <span class="ep"></span><span class="el"></span>
+  </div>
+  <h1 class="h1">
+    <span class="cl"><span class="ci cd0">Protect Your</span></span>
+    <span class="cl"><span class="ci cd1 gt">Lua Scripts</span></span>
+    <span class="cl"><span class="ci cd2 ot">Completely.</span></span>
+  </h1>
+  <p class="hero-sub">Seven interlocked protection layers, a custom VM with randomized opcodes, HWID locking and license management — the complete arsenal for enterprise Lua security.</p>
+  <div class="hero-btns">
+    <button class="btn btn-p jobf mag"><span>⚡ Obfuscate Now</span></button>
+    <button class="btn btn-g jlogin mag"><span>🔑 Admin Login</span></button>
+  </div>
+  <div class="scue"><div class="sline"></div><span>Scroll</span></div>
+</section>
 
-    function openModal(id) {
-      document.getElementById(id).style.display = "flex";
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).style.display = "none";
-    }
-
-    function scrollToObfuscator() {
-      const section = document.getElementById("obfuscatorSection");
-      section.style.display = "block";
-      section.scrollIntoView({ behavior: "smooth" });
-    }
-
-    async function adminLogin() {
-      const username = document.getElementById("loginUsername").value;
-      const password = document.getElementById("loginPassword").value;
-      
-      try {
-        const response = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await response.json();
-        
-        if (data.token) {
-          token = data.token;
-          localStorage.setItem("surfix_token", token);
-          closeModal("loginModal");
-          window.location.href = "/dashboard";
-        } else {
-          document.getElementById("loginError").textContent = data.error || "Login failed";
-        }
-      } catch (err) {
-        document.getElementById("loginError").textContent = err.message;
-      }
-    }
-
-    async function obfuscateScript() {
-      const script = document.getElementById("inputScript").value;
-      const level = document.getElementById("protectionLevel").value;
-      const lightning = document.getElementById("lightning").checked;
-      const silent = document.getElementById("silent").checked;
-      
-      if (!script.trim()) { alert("Please paste a Lua script"); return; }
-      
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = "⏳ Obfuscating...";
-      btn.disabled = true;
-      
-      try {
-        const response = await fetch("/api/admin/projects", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "temp_" + Date.now(),
-            script: script,
-            version: "1.0.0",
-            protection_level: level,
-            lightning: lightning,
-            silent: silent
-          })
-        });
-        const project = await response.json();
-        const loaderResponse = await fetch(`/api/loader/${project.id}.lua`);
-        const loaderCode = await loaderResponse.text();
-        
-        document.getElementById("obfuscateResult").innerHTML = `
-          <div style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); border-radius: 24px; padding: 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <strong style="color: #c084fc;"><i class="fas fa-check-circle"></i> Protected Script Ready</strong>
-              <div>
-                <button onclick="copyToClipboard(\`${loaderCode.replace(/`/g, '\\`')}\`)" style="background: none; border: none; color: #22d3ee; cursor: pointer;"><i class="fas fa-copy"></i> Copy</button>
-                <button onclick="downloadScript(\`${loaderCode.replace(/`/g, '\\`')}\`)" style="background: none; border: none; color: #22d3ee; cursor: pointer; margin-left: 0.75rem;"><i class="fas fa-download"></i> Download</button>
-              </div>
+<!-- TERMINAL -->
+<section class="tsec">
+  <div class="t3w">
+    <div class="t3e" id="t3">
+      <div class="tg-wrap">
+        <div class="tg"></div>
+        <div class="tbox">
+          <div class="tbar">
+            <div class="tdot td1"></div><div class="tdot td2"></div><div class="tdot td3"></div>
+            <div class="ttabs">
+              <div class="ttab on">protect.lua</div>
+              <div class="ttab">config.toml</div>
+              <div class="ttab">license.json</div>
             </div>
-            <textarea id="outputScript" rows="6" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.2); border-radius: 16px; padding: 0.75rem; color: #94a3b8; font-family: monospace; font-size: 0.7rem;" readonly>${loaderCode}</textarea>
-            <div style="margin-top: 0.75rem; font-size: 0.7rem; color: #64748b;"><i class="fas fa-chart-line"></i> Level: ${level.toUpperCase()} | Lightning: ${lightning ? "ON" : "OFF"} | Silent: ${silent ? "ON" : "OFF"}</div>
+            <div class="tver">surfix · max · 8 variants</div>
           </div>
-        `;
-        await fetch(`/api/admin/projects/${project.id}`, { method: "DELETE", headers: { "Authorization": "Bearer " + token } });
-      } catch (err) {
-        document.getElementById("obfuscateResult").innerHTML = `<div style="color: #ef4444; text-align: center;">Error: ${err.message}</div>`;
-      } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }
-    }
+          <div class="tbody" id="tb"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    function copyToClipboard(text) { navigator.clipboard.writeText(text); alert("Copied to clipboard!"); }
-    function downloadScript(code) {
-      const blob = new Blob([code], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "protected_script.lua";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+<!-- FEATURES -->
+<section class="sec" id="features">
+  <div class="eyebrow2 rev">Protection Suite</div>
+  <h2 class="sec-h rev">Every Attack<br><span class="gt">Shut Down.</span></h2>
+  <div class="bento">
+    <!-- layer stack -->
+    <div class="bc s3 rev rd1">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div class="bic bv">🔒</div>
+        <div><h3>7-Layer Defense</h3><p style="font-size:.77rem;">Strip one, hit six more</p></div>
+      </div>
+      <div class="ls">
+        <div class="lb lb1"><div class="lf lf1"></div><span class="ln">1</span>AES-256 Encrypt</div>
+        <div class="lb lb2"><div class="lf lf2"></div><span class="ln">2</span>Flow Flattening</div>
+        <div class="lb lb3"><div class="lf lf3"></div><span class="ln">3</span>VM Bytecode</div>
+        <div class="lb lb4"><div class="lf lf4"></div><span class="ln">4</span>Opcode Shuffle</div>
+        <div class="lb lb5"><div class="lf lf5"></div><span class="ln">5</span>Anti-Tamper</div>
+        <div class="lb lb6"><div class="lf lf6"></div><span class="ln">6</span>Anti-Debug</div>
+        <div class="lb lb7"><div class="lf lf7"></div><span class="ln">7</span>Integrity Check</div>
+      </div>
+    </div>
+    <!-- vm opcode -->
+    <div class="bc s9 rev rd2" id="vmCard">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="bic bc2">⚙️</div>
+          <div><h3>Custom Virtual Machine</h3><p>Unique randomized opcodes per build — no two outputs share an instruction set</p></div>
+        </div>
+        <div style="font-family:var(--M);font-size:.65rem;color:rgba(255,255,255,.17);text-align:right;line-height:1.85;flex-shrink:0;margin-left:16px;">
+          seed: 0x<span id="seedHex" style="color:var(--c2);">4f8a</span><br>variants: <span style="color:var(--v3);">8 / 8</span><br><span style="color:#4ade80;">● live</span>
+        </div>
+      </div>
+      <div id="ov"></div>
+    </div>
+    <!-- license -->
+    <div class="bc s6 rev rd1">
+      <div class="bic bp">🔑</div>
+      <h3>License Management</h3>
+      <p>HWID locking, Discord binding, expiry, usage caps, auth logs, concurrent limits. Zero code required.</p>
+      <div style="margin-top:16px;">
+        <span class="tag tv">HWID</span><span class="tag tc">key_days</span>
+        <span class="tag tp">auth_expire</span><span class="tag tg2">Discord</span>
+        <span class="tag tv">max_uses</span>
+      </div>
+    </div>
+    <!-- heartbeat -->
+    <div class="bc s6 rev rd2" id="hbCard">
+      <div class="bic bg2">💓</div>
+      <h3>Heartbeat System</h3>
+      <p>Real-time session tracking. Concurrent limits enforced, dead sessions auto-reaped.</p>
+      <svg id="hbSvg" width="100%" height="62" viewBox="0 0 480 62" preserveAspectRatio="none" style="margin-top:18px;">
+        <path class="hb-g" d="M0,31 L80,31 L92,9 L104,53 L116,13 L128,49 L140,31 L200,31 L212,7 L224,55 L236,11 L248,51 L260,31 L320,31 L332,9 L344,53 L356,13 L368,49 L380,31 L480,31"/>
+        <path class="hb-p" d="M0,31 L80,31 L92,9 L104,53 L116,13 L128,49 L140,31 L200,31 L212,7 L224,55 L236,11 L248,51 L260,31 L320,31 L332,9 L344,53 L356,13 L368,49 L380,31 L480,31"/>
+      </svg>
+    </div>
+    <!-- cache -->
+    <div class="bc s3 rev rd3">
+      <div class="bic ba">⚡</div>
+      <h3>Variant Cache</h3>
+      <p>8 pre-generated variants per version.</p>
+      <div style="margin-top:18px;display:flex;align-items:baseline;gap:7px;">
+        <span style="font-size:3rem;font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1;">80×</span>
+        <span style="color:rgba(255,255,255,.27);font-size:.8rem;">faster delivery</span>
+      </div>
+    </div>
+    <!-- anti-tamper -->
+    <div class="bc s3 rev rd1">
+      <div class="bic br">🛡️</div>
+      <h3>Anti-Tamper</h3>
+      <p>Runtime checksums, debugger detection, self-verification. Your code fights back.</p>
+    </div>
+    <!-- source locker -->
+    <div class="bc s6 rev rd2">
+      <div class="bic bv">🔐</div>
+      <h3>Source Locker</h3>
+      <p>AES-256-GCM client-side encryption. Your plaintext never reaches our servers — your seed, your control.</p>
+    </div>
+  </div>
+</section>
 
-    window.onclick = function(event) {
-      if (event.target.classList.contains("modal")) event.target.style.display = "none";
-    }
-  </script>
+<!-- STATS -->
+<div class="stats rev">
+  <div class="st"><div class="stn"><span class="ctr" data-t="7">0</span></div><div class="stl">Protection Layers</div></div>
+  <div class="st"><div class="stn"><span class="ctr" data-t="8">0</span>×</div><div class="stl">Variant Cache</div></div>
+  <div class="st"><div class="stn">24/7</div><div class="stl">License Server</div></div>
+  <div class="st"><div class="stn">HWID</div><div class="stl">Hardware Lock</div></div>
+</div>
+
+<!-- CTA -->
+<section class="ctasec">
+  <div class="cta-box rev">
+    <div style="font-family:var(--M);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--c2);margin-bottom:14px;">Start Protecting</div>
+    <h2 style="font-size:clamp(2.2rem,4.5vw,3.6rem);font-weight:800;letter-spacing:-.035em;line-height:1.04;margin-bottom:14px;">Make Your Scripts<br><span class="gt">Unbreakable Today.</span></h2>
+    <p style="color:var(--muted);font-size:1rem;max-width:420px;margin:0 auto 38px;line-height:1.7;">Join developers who trust SURFIX to protect their most valuable Lua scripts.</p>
+    <div style="display:flex;gap:13px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-p jobf mag"><span>⚡ Obfuscate Free</span></button>
+      <a href="https://discord.gg/hq5t5XCZw" class="btn btn-g mag" target="_blank"><span>Join Discord</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="fl">
+    <div class="flm"><img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" alt="S"></div>
+    © 2024–2025 SURFIX · Made with ❤ by <strong style="color:var(--v3);margin-left:3px;">XZX HUB</strong>
+  </div>
+  <div class="fr">
+    <a href="#" class="jtos">Terms</a>
+    <a href="#" class="jprivacy">Privacy</a>
+    <a href="https://discord.gg/hq5t5XCZw" target="_blank">Discord</a>
+  </div>
+</footer>
+
+<!-- LOGIN MODAL -->
+<div class="modal" id="mLogin">
+  <div class="mbox">
+    <button class="mclose" data-m="mLogin">×</button>
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#06b6d4);margin:0 auto 11px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" style="width:32px;height:32px;object-fit:contain;filter:brightness(10);">
+      </div>
+      <div class="mh" style="margin-bottom:0;">Admin Access</div>
+    </div>
+    <input class="mf" id="lu" type="text" placeholder="Username" value="admin">
+    <input class="mf" id="lp" type="password" placeholder="Password">
+    <button class="mbtn" id="lbtn">Sign In</button>
+    <div class="merr" id="lerr"></div>
+  </div>
+</div>
+
+<!-- TOS MODAL -->
+<div class="modal" id="mTos">
+  <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
+    <button class="mclose" data-m="mTos">×</button>
+    <div class="mh">Terms of Service</div>
+    <p style="color:rgba(255,255,255,.26);font-family:var(--M);font-size:.65rem;margin-bottom:14px;">Last Updated: March 21, 2025</p>
+    <h3 class="tos-h">1. Acceptance</h3><p class="tos-p">By accessing SURFIX you agree to these Terms. If you do not agree, do not use the Service.</p>
+    <h3 class="tos-h">2. Permitted Use</h3><p class="tos-p">SURFIX provides Lua obfuscation and license management for legitimate protection only.</p>
+    <h3 class="tos-h">3. Prohibited Use</h3><p class="tos-p">You may not use SURFIX to protect malware, viruses, or harmful software. Violations result in immediate ban and may be reported to authorities.</p>
+    <h3 class="tos-h">4. HWID & Licensing</h3><p class="tos-p">Keys are non-transferable. Bypassing HWID locks or sharing keys results in permanent ban.</p>
+    <h3 class="tos-h">5. No Warranty</h3><p class="tos-p">Service is "as is". We do not guarantee immunity from all reverse engineering.</p>
+    <h3 class="tos-h">6. Contact</h3><p class="tos-p">Questions? <a href="https://discord.gg/hq5t5XCZw" style="color:var(--v3);">Join our Discord</a>.</p>
+    <button class="mbtn" style="margin-top:22px;" onclick="closeM('mTos')">Close</button>
+  </div>
+</div>
+
+<!-- PRIVACY MODAL -->
+<div class="modal" id="mPrivacy">
+  <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
+    <button class="mclose" data-m="mPrivacy">×</button>
+    <div class="mh">Privacy Policy</div>
+    <h3 class="tos-h">Data We Collect</h3><p class="tos-p">License keys, HWID data, IP addresses for rate limiting, and encrypted script data. With Source Locker enabled, we never see plaintext.</p>
+    <h3 class="tos-h">How We Use It</h3><p class="tos-p">Solely to provide the Service, enforce licensing, and prevent abuse. We never sell your data.</p>
+    <h3 class="tos-h">Security</h3><p class="tos-p">All data encrypted at rest. Passwords bcrypt-hashed. Source Locker uses AES-256-GCM with seeds that never leave your device.</p>
+    <button class="mbtn" style="margin-top:22px;" onclick="closeM('mPrivacy')">Close</button>
+  </div>
+</div>
+
+<!-- OBF MODAL -->
+<div class="modal" id="mObf">
+  <div class="mbox" style="max-width:530px;">
+    <button class="mclose" data-m="mObf">×</button>
+    <div class="mh">⚡ Obfuscate Script</div>
+    <textarea class="cf" id="sc" rows="7" placeholder="-- Paste your Lua script here&#10;print('Hello, World!')"></textarea>
+    <select class="sf" id="slvl">
+      <option value="light">Light — XOR + Integrity</option>
+      <option value="medium">Medium — + String Table</option>
+      <option value="max" selected>Maximum — VM + Anti-Tamper</option>
+    </select>
+    <div class="crow">
+      <label><input type="checkbox" id="cl2"> ⚡ Lightning Mode</label>
+      <label><input type="checkbox" id="cs2"> 🔇 Silent Mode</label>
+    </div>
+    <button class="mbtn" id="obfBtn" onclick="doObf()">🚀 Obfuscate</button>
+    <div id="obfRes" style="margin-top:13px;"></div>
+  </div>
+</div>
+
+<script>
+// ══ LOADER ══
+const MSGS=['Initializing engine…','Loading 7 protection layers…','Warming variant cache…','Ready.'];
+let pct=0; const lf=document.getElementById('lf'),ll=document.getElementById('ll');
+const li=setInterval(()=>{
+  pct=Math.min(pct+Math.random()*18+3,100);
+  lf.style.width=pct+'%';
+  ll.textContent=MSGS[Math.min(Math.floor(pct/25),3)];
+  if(pct>=100){
+    clearInterval(li);
+    setTimeout(()=>{
+      document.getElementById('loader').classList.add('out');
+      document.querySelectorAll('.ci').forEach(e=>e.classList.add('in'));
+    },500);
+  }
+},80);
+
+// ══ CURSOR ══
+const dot=document.getElementById('dot'),ring=document.getElementById('ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
+(function a(){rx+=(mx-rx)*.11;ry+=(my-ry)*.11;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a);})();
+document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.bc,.lb,.st,.mag'))document.body.classList.add('hov');});
+document.addEventListener('mouseout',e=>{if(e.target.closest('a,button,.bc,.lb,.st,.mag'))document.body.classList.remove('hov');});
+
+// ══ MAGNETIC ══
+document.querySelectorAll('.mag').forEach(el=>{
+  el.addEventListener('mousemove',e=>{
+    const r=el.getBoundingClientRect();
+    el.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.28}px,${(e.clientY-r.top-r.height/2)*.28}px)`;
+  });
+  el.addEventListener('mouseleave',()=>el.style.transform='');
+});
+
+// ══ CANVAS BG: nebula + constellation ══
+const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');
+let BW,BH,stars=[];
+function resB(){BW=bgC.width=innerWidth;BH=bgC.height=innerHeight;makeStars();}
+function makeStars(){
+  stars=[];
+  for(let i=0;i<90;i++) stars.push({x:Math.random()*BW,y:Math.random()*BH,r:.3+Math.random()*1.4,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,a:.2+Math.random()*.55,ph:Math.random()*Math.PI*2});
+}
+resB();window.addEventListener('resize',resB);
+let bmx=BW/2,bmy=BH/2;
+document.addEventListener('mousemove',e=>{bmx=e.clientX;bmy=e.clientY;});
+let bf=0;
+(function drawBg(){
+  bgX.clearRect(0,0,BW,BH);
+  // nebula
+  [[.14,.18,520,'rgba(124,58,237,',0.13],[.88,.77,580,'rgba(6,182,212,',0.09],[.5,.46,320,'rgba(236,72,153,',0.055]].forEach(([xx,yy,rr,col,aa])=>{
+    const g=bgX.createRadialGradient(xx*BW,yy*BH,0,xx*BW,yy*BH,rr);
+    g.addColorStop(0,col+aa+')');g.addColorStop(1,col+'0)');
+    bgX.fillStyle=g;bgX.fillRect(0,0,BW,BH);
+  });
+  // stars
+  stars.forEach(s=>{
+    s.x+=s.vx;s.y+=s.vy;if(s.x<0)s.x=BW;if(s.x>BW)s.x=0;if(s.y<0)s.y=BH;if(s.y>BH)s.y=0;
+    s.ph+=.013;
+    bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);
+    bgX.fillStyle=`rgba(210,200,255,${s.a+Math.sin(s.ph)*.12})`;bgX.fill();
+  });
+  // connections
+  for(let i=0;i<stars.length;i++) for(let j=i+1;j<stars.length;j++){
+    const dx=stars[i].x-stars[j].x,dy=stars[i].y-stars[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<155){bgX.beginPath();bgX.moveTo(stars[i].x,stars[i].y);bgX.lineTo(stars[j].x,stars[j].y);bgX.strokeStyle=`rgba(124,58,237,${(1-d/155)*.07})`;bgX.lineWidth=.5;bgX.stroke();}
+  }
+  // mouse glow
+  const g2=bgX.createRadialGradient(bmx,bmy,0,bmx,bmy,280);
+  g2.addColorStop(0,'rgba(124,58,237,0.06)');g2.addColorStop(1,'rgba(124,58,237,0)');
+  bgX.fillStyle=g2;bgX.fillRect(0,0,BW,BH);
+  requestAnimationFrame(drawBg);
+})();
+
+// ══ FLOATING PARTICLES ══
+const pc=document.getElementById('particles'),px=pc.getContext('2d');
+let PW,PH,parts=[];
+function resP(){PW=pc.width=innerWidth;PH=pc.height=innerHeight;}
+resP();window.addEventListener('resize',resP);
+const CHARS=['0x','⊕','VM','XOR','{}','fn','if','&&','←','≡','//','◆'];
+const COLS=['rgba(124,58,237,','rgba(6,182,212,','rgba(168,85,247,','rgba(236,72,153,'];
+let pf=0;
+(function drawP(){
+  px.clearRect(0,0,PW,PH);pf++;
+  if(pf%22===0&&parts.length<60) parts.push({x:Math.random()*PW,y:PH+8,dx:(Math.random()-.5)*.4,dy:-(0.18+Math.random()*.45),ch:CHARS[Math.floor(Math.random()*CHARS.length)],col:COLS[Math.floor(Math.random()*COLS.length)],a:0,ma:.08+Math.random()*.18,sz:7+Math.random()*5,life:0,ml:200+Math.random()*200});
+  parts=parts.filter(p=>p.life<p.ml);
+  parts.forEach(p=>{
+    p.life++;p.x+=p.dx;p.y+=p.dy;
+    const t=p.life/p.ml;p.a=t<.1?(t/.1)*p.ma:t>.8?((1-t)/.2)*p.ma:p.ma;
+    px.font=`${p.sz}px 'Space Mono',monospace`;
+    px.fillStyle=p.col+p.a+')';px.fillText(p.ch,p.x,p.y);
+  });
+  requestAnimationFrame(drawP);
+})();
+
+// ══ NAV ══
+window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('stuck',scrollY>40));
+
+// ══ CARD GLOW ══
+document.querySelectorAll('.bc').forEach(c=>{
+  c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');c.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});
+});
+
+// ══ TERMINAL ══
+const TL=[
+  {t:'cmd'},
+  {t:'div'},
+  {t:'info',x:'│  Source: 2.4 KB · 147 tokens · Lua 5.4'},
+  {t:'ok',x:'│  ✓ AES-256-GCM string encryption',n:'31 strings encrypted'},
+  {t:'ok',x:'│  ✓ Control flow flattening',n:'23 transforms applied'},
+  {t:'ok',x:'│  ✓ VM bytecode generation',n:'seed 0x4f8a · unique opcodes'},
+  {t:'ok',x:'│  ✓ Anti-tamper + Anti-debug'},
+  {t:'ok',x:'│  ✓ Variant cache warmed',n:'8 variants · 20–80× faster'},
+  {t:'div'},
+  {t:'done',x:'✔  Protected · 18.7 KB · delivery ~12ms'},
+];
+const tb=document.getElementById('tb');let ti=0;
+function tnext(){
+  if(ti>=TL.length)return;const l=TL[ti++];
+  const d=document.createElement('div');d.className='tl';
+  if(l.t==='cmd') d.innerHTML=`<span class="cp">❯</span><span class="ck">&nbsp;surfix</span><span class="cs">&nbsp;protect</span><span style="color:rgba(255,255,255,.5)"> script.lua</span><span class="cc"> --level max --variants 8</span>`;
+  else if(l.t==='div') d.innerHTML=`<span class="cd">└──────────────────────────────────────────</span>`;
+  else if(l.t==='ok') d.innerHTML=`<span>&nbsp;</span><span class="cok">${l.x}</span>${l.n?`<span class="cc"> · ${l.n}</span>`:''}`;
+  else if(l.t==='info') d.innerHTML=`<span>&nbsp;</span><span class="cc">${l.x}</span>`;
+  else d.innerHTML=`<span class="cok" style="font-weight:700;">${l.x}</span>`;
+  tb.appendChild(d);requestAnimationFrame(()=>d.classList.add('in'));
+  if(ti<TL.length) setTimeout(tnext,l.t==='cmd'?0:l.t==='div'?70:140);
+}
+// terminal 3d tilt
+const t3=document.getElementById('t3');
+document.addEventListener('mousemove',e=>{
+  const cx=innerWidth/2,cy=innerHeight*.38;
+  t3.style.transform=`rotateX(${((e.clientY-cy)/cy)*-5}deg) rotateY(${((e.clientX-cx)/cx)*3.5}deg)`;
+});
+
+// ══ INTERSECTION OBSERVERS ══
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.classList.add('in');
+    if(e.target.id==='vmCard'){document.querySelectorAll('.ob').forEach(b=>b.style.width=b.dataset.p+'%');}
+    if(e.target.id==='hbCard'){document.getElementById('hbSvg').classList.add('hbd');}
+  });
+},{threshold:.12});
+document.querySelectorAll('.rev').forEach(e=>io.observe(e));
+
+const t3io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){t3.classList.add('vis');setTimeout(tnext,500);}});
+},{threshold:.18});
+t3io.observe(t3);
+
+// ══ OPCODES ══
+[['LOAD_K',85,'0x4F8A','linear-gradient(90deg,#7c3aed,#c084fc)'],['SETGLOB',62,'0x7C12','linear-gradient(90deg,#06b6d4,#22d3ee)'],['GETUPVAL',44,'0x3E09','linear-gradient(90deg,#ec4899,#f472b6)'],['CALL',91,'0x81AF','linear-gradient(90deg,#10b981,#34d399)'],['RETURN',33,'0x55D3','linear-gradient(90deg,#f59e0b,#fbbf24)'],['JMP',70,'0xD2B1','linear-gradient(90deg,#7c3aed,#06b6d4)']].forEach(([n,p,h,g])=>{
+  const r=document.createElement('div');r.className='or';
+  r.innerHTML=`<span class="ol">${n}</span><div class="ot2"><div class="ob" style="background:${g}" data-p="${p}"></div></div><span class="oh">${h}</span>`;
+  document.getElementById('ov').appendChild(r);
+});
+setInterval(()=>{
+  const el=document.getElementById('seedHex');if(!el)return;
+  el.style.opacity='0';setTimeout(()=>{el.textContent=Math.floor(Math.random()*0xFFFF).toString(16).padStart(4,'0');el.style.transition='opacity .4s';el.style.opacity='1';},200);
+},3200);
+
+// ══ COUNTERS ══
+const cio=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.querySelectorAll('.ctr').forEach(el=>{
+      const t=+el.dataset.t;let v=0;const s=t/36;
+      const iv=setInterval(()=>{v=Math.min(v+s,t);el.textContent=Math.round(v);if(v>=t)clearInterval(iv);},28);
+    });
+    cio.unobserve(e.target);
+  });
+},{threshold:.5});
+document.querySelectorAll('.stats').forEach(e=>cio.observe(e));
+
+// ══ MODALS ══
+function openM(id){const m=document.getElementById(id);m.classList.add('open');requestAnimationFrame(()=>m.classList.add('vis'));}
+function closeM(id){const m=document.getElementById(id);m.classList.remove('vis');setTimeout(()=>m.classList.remove('open'),300);}
+document.querySelectorAll('.jlogin').forEach(e=>e.addEventListener('click',()=>openM('mLogin')));
+document.querySelectorAll('.jobf').forEach(e=>e.addEventListener('click',()=>openM('mObf')));
+document.querySelectorAll('.jtos').forEach(e=>e.addEventListener('click',ev=>{ev.preventDefault();openM('mTos');}));
+document.querySelectorAll('.jprivacy').forEach(e=>e.addEventListener('click',ev=>{ev.preventDefault();openM('mPrivacy');}));
+document.querySelectorAll('.mclose').forEach(e=>e.addEventListener('click',()=>closeM(e.dataset.m)));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);}));
+
+// ══ LOGIN ══
+let tok=localStorage.getItem('surfix_token')||'';
+document.getElementById('lbtn').addEventListener('click',async()=>{
+  const u=document.getElementById('lu').value,p=document.getElementById('lp').value;
+  document.getElementById('lerr').textContent='';
+  try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});const d=await r.json();if(d.token){tok=d.token;localStorage.setItem('surfix_token',tok);closeM('mLogin');location.href='/dashboard';}else document.getElementById('lerr').textContent=d.error||'Login failed';}
+  catch(err){document.getElementById('lerr').textContent=err.message;}
+});
+
+// ══ OBFUSCATE ══
+async function doObf(){
+  const script=document.getElementById('sc').value.trim();
+  if(!script){alert('Paste a Lua script first');return;}
+  const lvl=document.getElementById('slvl').value,li2=document.getElementById('cl2').checked,si=document.getElementById('cs2').checked;
+  const btn=document.getElementById('obfBtn'),res=document.getElementById('obfRes');
+  btn.textContent='⏳ Obfuscating…';btn.disabled=true;res.innerHTML='';
+  try{
+    const r=await fetch('/api/admin/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'temp_'+Date.now(),script,version:'1.0.0',protection_level:lvl,lightning:li2,silent:si})});
+    const proj=await r.json();
+    const lr=await fetch(`/api/loader/${proj.id}.lua`);
+    const code=await lr.text();
+    res.innerHTML=`<div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:13px;padding:15px;"><p style="color:#34d399;font-weight:700;margin-bottom:9px;">✔ Protected · ${lvl.toUpperCase()}</p><textarea rows="4" readonly style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:9px;color:#64748b;font-family:var(--M);font-size:.72rem;">${code}</textarea><button onclick="navigator.clipboard.writeText(this.previousSibling.value).then(()=>alert('Copied!'))" style="width:100%;margin-top:9px;padding:9px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);border-radius:9px;color:#22d3ee;font-family:var(--F);cursor:pointer;font-weight:700;font-size:.83rem;">Copy to Clipboard</button></div>`;
+    await fetch(`/api/admin/projects/${proj.id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+tok}});
+  }catch(err){res.innerHTML=`<p style="color:#f87171;margin-top:9px;font-size:.83rem;">Error: ${err.message}</p>`;}
+  finally{btn.textContent='🚀 Obfuscate';btn.disabled=false;}
+}
+</script>
 </body>
 </html>
