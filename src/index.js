@@ -31,10 +31,15 @@ app.use("/api/v1/heartbeat", rateLimit({ windowMs: 60_000, max: 120, standardHea
 app.use("/api/admin/login",  rateLimit({ windowMs: 60_000, max: 10,  standardHeaders: true }));
 app.use("/api/",             rateLimit({ windowMs: 60_000, max: 300, standardHeaders: true }));
 
-app.use("/api",        require("./routes/loader"));
-app.use("/api/v1",     require("./routes/auth"));
-app.use("/api/v1",     require("./routes/heartbeat"));
-app.use("/api/admin",  require("./routes/admin"));
+app.use("/api/public",     require("./routes/public"));
+app.use("/api",            require("./routes/loader"));
+app.use("/api/v1",         require("./routes/auth"));
+app.use("/api/v1",         require("./routes/heartbeat"));
+app.use("/api/admin",      require("./routes/admin"));
+
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/dashboard.html"));
+});
 
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "../public/index.html")));
 
