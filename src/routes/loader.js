@@ -1,208 +1,79 @@
 const router = require("express").Router();
 const db = require("../database");
+const SurfixObfuscator = require("../obfuscator");
+const rateLimit = require("express-rate-limit");
+const path = require("path");
+const fs = require("fs");
 
-router.get("/loader/:projectId.lua", async (req, res) => {
-  try {
-    const project = await db.get("SELECT id, name, version, ffa FROM projects WHERE id = ?", [req.params.projectId]);
-    if (!project) return res.status(404).send("-- Project not found");
+if (!process.env.LOADER_SECRET) {
+  throw new Error("LOADER_SECRET must be set in environment");
+}
+const LOADER_SECRET = process.env.LOADER_SECRET;
 
-    const host = `${req.protocol}://${req.get("host")}`;
-    const ffa = project.ffa === 1;
-    const userAgent = req.headers["user-agent"] || "";
-    const isBrowser = userAgent.includes("Mozilla") || userAgent.includes("Chrome") || userAgent.includes("Safari");
+if (!process.env.PUBLIC_URL) {
+  throw new Error("PUBLIC_URL must be set in environment");
+}
+const HOST = process.env.PUBLIC_URL;
 
-    if (isBrowser) {
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.setHeader("X-Content-Type-Options", "nosniff");
-      res.setHeader("X-Frame-Options", "DENY");
-      res.setHeader("Referrer-Policy", "no-referrer");
-      
-      return res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>${project.name} — SURFIX Protected Script</title>
-  <style>
-    * {
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-    }
-    body {
-      background: #0a0a0a;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, 'Segoe UI', monospace;
-      margin: 0;
-      padding: 20px;
-      cursor: default;
-    }
-    .card {
-      background: #111;
-      border: 1px solid #2a2a2a;
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 500px;
-      text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      position: relative;
-    }
-    .icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-    h1 {
-      color: #fff;
-      font-size: 24px;
-      margin-bottom: 12px;
-    }
-    p {
-      color: #888;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    code {
-      background: #1a1a1a;
-      padding: 12px;
-      border-radius: 8px;
-      display: block;
-      font-family: monospace;
-      font-size: 12px;
-      color: #4ade80;
-      word-break: break-all;
-      margin: 16px 0;
-      pointer-events: none;
-    }
-    .note {
-      font-size: 12px;
-      color: #666;
-      margin-top: 16px;
-    }
-    a {
-      color: #8b5cf6;
-      text-decoration: none;
-      pointer-events: none;
-    }
-    .warning {
-      font-size: 11px;
-      color: #ff4444;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid #222;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">🔒</div>
-    <h1>${escapeHtml(project.name)}</h1>
-    <p>This is a protected Lua script. It cannot be viewed in a browser.</p>
-    <code>loadstring(game:HttpGet("${host}/api/loader/${project.id}.lua"))()</code>
-    <div class="note">
-      <span>📜 Loadstring</span><br>
-      ${ffa ? 'FFA Mode — No license key required' : 'script_key = "YOUR_KEY"; -- A key is required'}
-    </div>
-    <div class="note">
-      Contents can not be displayed on browser • <a href="#">SURFIX</a>
-    </div>
-    <div class="warning">
-      ⚠️ Protected content — unauthorized access detected
-    </div>
-  </div>
+const MAX_CACHE_SIZE = 500;
+const loaderCache = new Map();
 
-  <script>
-    (function() {
-      // Disable right-click
-      document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        return false;
-      });
-      
-      // Disable keyboard shortcuts
-      document.addEventListener('keydown', function(e) {
-        // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+P
-        if (e.key === 'F12' || 
-            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
-            (e.ctrlKey && e.key === 'u') ||
-            (e.ctrlKey && e.key === 's') ||
-            (e.ctrlKey && e.key === 'p') ||
-            (e.ctrlKey && e.key === 'U') ||
-            (e.key === 'PrintScreen')) {
-          e.preventDefault();
-          return false;
-        }
-      });
-      
-      // Anti-debug: detect DevTools opening
-      let devToolsOpen = false;
-      const threshold = 160;
-      const checkDevTools = function() {
-        const widthDiff = window.outerWidth - window.innerWidth;
-        const heightDiff = window.outerHeight - window.innerHeight;
-        if (widthDiff > threshold || heightDiff > threshold) {
-          if (!devToolsOpen) {
-            devToolsOpen = true;
-            document.body.innerHTML = '<div style="background:#000; color:#ff4444; display:flex; align-items:center; justify-content:center; height:100vh; text-align:center; padding:20px;"><div><h1>⚠️ Developer Tools Detected</h1><p>Debugging tools are not allowed on this page.</p><p>Close DevTools to continue.</p></div></div>';
-          }
-        } else {
-          devToolsOpen = false;
-        }
-      };
-      setInterval(checkDevTools, 500);
-      
-      // Disable copy/paste
-      document.addEventListener('copy', function(e) {
-        e.preventDefault();
-        return false;
-      });
-      document.addEventListener('cut', function(e) {
-        e.preventDefault();
-        return false;
-      });
-      document.addEventListener('paste', function(e) {
-        e.preventDefault();
-        return false;
-      });
-      
-      // Disable drag and drop
-      document.addEventListener('dragstart', function(e) {
-        e.preventDefault();
-        return false;
-      });
-      
-      // Disable text selection (additional)
-      document.addEventListener('selectstart', function(e) {
-        e.preventDefault();
-        return false;
-      });
-      
-      // Disable image dragging
-      document.querySelectorAll('img, code').forEach(el => {
-        el.addEventListener('dragstart', (e) => {
-          e.preventDefault();
-          return false;
-        });
-      });
-      
-      // Console warning
-      console.log('%c⚠️ Protected Content', 'color: #ff4444; font-size: 14px; font-weight: bold;');
-      console.log('%cThis page is protected. Viewing source is not allowed.', 'color: #888;');
-    })();
-  </script>
-</body>
-</html>`);
-    }
+function escapeLua(str) {
+  if (!str) return "";
+  return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
 
-    // API clients get Lua loader (unchanged)
-    const loader = `-- ${project.name} v${project.version} | Protected by SURFIX
+function escapeHtml(str) {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isValidProjectId(id) {
+  return /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+function cacheGet(key) {
+  const val = loaderCache.get(key);
+  if (!val) return null;
+  loaderCache.delete(key);
+  loaderCache.set(key, val);
+  return val;
+}
+
+function cacheSet(key, value) {
+  if (loaderCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = loaderCache.keys().next().value;
+    loaderCache.delete(firstKey);
+  }
+  loaderCache.set(key, value);
+}
+
+const HTML_TEMPLATE = fs.readFileSync(
+  path.join(__dirname, "../templates/loader.html"),
+  "utf8"
+);
+
+const loaderLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: "-- Rate limit exceeded. Please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+router.use("/loader", loaderLimiter);
+
+function buildRawLoader(project, ffa) {
+  return `-- ${escapeLua(project.name)} v${escapeLua(project.version)} | Protected by SURFIX
 -- ${ffa ? "FFA Mode: No key required" : "Set your license key below before running"}
 local _KEY = "${ffa ? "FFA" : ""}" -- << PASTE YOUR KEY HERE (if not FFA)
-local _PROJECT = "${project.id}"
-local _HOST = "${host}"
+local _PROJECT = "${escapeLua(project.id)}"
+local _HOST = "${HOST}"
 
 local function _HWID()
   if game and game.GetService then
@@ -257,28 +128,90 @@ if not _data.script then
   return
 end
 
-local _fn, _err = loadstring(_data.script)
+local _loader = loadstring or load
+local _fn, _err = _loader(_data.script)
 if not _fn then
   error("[SURFIX] Script load error: " .. tostring(_err))
   return
 end
 _fn()`;
+}
 
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.send(loader);
+router.get("/loader/:projectId.lua", async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!isValidProjectId(projectId)) {
+      return res.status(400).type("text/plain").send("-- Invalid project ID");
+    }
+
+    const project = await db.get("SELECT id, name, version, ffa FROM projects WHERE id = ?", [projectId]);
+    if (!project) return res.status(404).type("text/plain").send("-- Project not found");
+
+    const ffa = project.ffa === 1;
+    const accept = req.headers.accept || "";
+    const userAgent = req.headers["user-agent"] || "";
+    const isBrowser = accept.includes("text/html") && !accept.includes("application/json") && /Gecko|Chrome|Safari|Firefox|Edg/.test(userAgent);
+
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
+    if (isBrowser) {
+      const loaderUrl = `${HOST}/api/loader/${project.id}.lua`;
+      const urlParts = [];
+      for (let i = 0; i < loaderUrl.length; i++) {
+        urlParts.push(loaderUrl.charCodeAt(i).toString(16));
+      }
+      const partsJson = JSON.stringify(urlParts);
+      const html = HTML_TEMPLATE
+        .replace("__PROJECT_NAME__", escapeHtml(project.name))
+        .replace("__FFA_NOTE__", ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
+        .replace("__PARTS__", partsJson);
+      res.set({
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "no-referrer",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'"
+      });
+      res.type("html").send(html);
+      return;
+    }
+
+    const cacheKey = `${project.id}:${project.version}:${HOST}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      res.type("text/plain").send(cached);
+      return;
+    }
+
+    const rawLoader = buildRawLoader(project, ffa);
+    const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
+    const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
+    cacheSet(cacheKey, obfuscatedLoader);
+    res.type("text/plain").send(obfuscatedLoader);
   } catch (err) {
-    res.status(500).send("-- Error: " + err.message);
+    console.error("Loader error:", err);
+    res.status(500).type("text/plain").send("-- Error: " + err.message);
   }
 });
 
-function escapeHtml(str) {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+async function warmCache() {
+  try {
+    const projects = await db.all("SELECT id, name, version, ffa FROM projects");
+    for (const proj of projects) {
+      const cacheKey = `${proj.id}:${proj.version}:${HOST}`;
+      if (!loaderCache.has(cacheKey)) {
+        const rawLoader = buildRawLoader(proj, proj.ffa === 1);
+        const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
+        const { code } = obfuscator.obfuscate(rawLoader);
+        cacheSet(cacheKey, code);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to warm loader cache:", err);
+  }
 }
+
+setImmediate(() => warmCache());
 
 module.exports = router;
