@@ -164,9 +164,9 @@ router.get("/loader/:projectId.lua", async (req, res) => {
       }
       const partsJson = JSON.stringify(urlParts);
       const html = HTML_TEMPLATE
-        .replace("__PROJECT_NAME__", escapeHtml(project.name))
-        .replace("__FFA_NOTE__", ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
-        .replace("__PARTS__", partsJson);
+        .replace(/__PROJECT_NAME__/g, escapeHtml(project.name))
+        .replace(/__FFA_NOTE__/g, ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
+        .replace(/__PARTS__/g, partsJson);
       res.set({
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
