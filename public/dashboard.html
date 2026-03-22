@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SURFIX — Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #01010c;
+      font-family: 'Syne', sans-serif;
+      color: #f2f2ff;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+    }
+    .logo-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+    .logout-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(124,58,237,0.3);
+      padding: 8px 20px;
+      border-radius: 40px;
+      color: #f2f2ff;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover {
+      border-color: #ec4899;
+      background: rgba(236,72,153,0.1);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: rgba(5,5,20,0.76);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 20px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #c084fc, #22d3ee);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .stat-label {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .card {
+      background: rgba(5,5,20,0.76);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #c084fc;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .project-item {
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .project-name {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .project-meta {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    .project-actions {
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      background: rgba(124,58,237,0.2);
+      border: 1px solid rgba(124,58,237,0.3);
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: #f2f2ff;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: rgba(124,58,237,0.4);
+      border-color: #7c3aed;
+    }
+    .btn-danger {
+      background: rgba(236,72,153,0.2);
+      border-color: rgba(236,72,153,0.3);
+    }
+    .btn-danger:hover {
+      background: rgba(236,72,153,0.4);
+      border-color: #ec4899;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: rgba(255,255,255,0.4);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    th {
+      color: #c084fc;
+      font-weight: 600;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.open {
+      display: flex;
+    }
+    .modal-content {
+      background: rgba(5,5,20,0.97);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 24px;
+      padding: 2rem;
+      max-width: 550px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-content h3 {
+      margin-bottom: 1rem;
+      color: #c084fc;
+    }
+    .modal-content input, .modal-content textarea, .modal-content select {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 12px;
+      color: white;
+      margin-bottom: 1rem;
+      font-family: inherit;
+    }
+    .modal-content label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+    }
+    .modal-content input[type="checkbox"] {
+      width: auto;
+      margin-bottom: 0;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+    .keys-result {
+      margin-top: 1rem;
+    }
+    .keys-result textarea {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: #4ade80;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-mark"></div>
+      <span class="logo-name">SURFIX Admin</span>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </div>
+
+  <div id="dashboardContent">
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-number">—</div><div class="stat-label">Loading...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Projects</h2>
+        <button onclick="showCreateProject()">+ New Project</button>
+      </div>
+      <div id="projectsList"><div class="loading">Loading projects...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Recent Auth Logs</h2>
+      <div id="logsTable"><div class="loading">Loading logs...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="projectModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">New Project</h3>
+    <input type="hidden" id="editProjectId">
+    <input type="text" id="projectName" placeholder="Project Name">
+    <input type="text" id="projectVersion" placeholder="Version" value="1.0.0">
+    <select id="projectProtection">
+      <option value="light">Light</option>
+      <option value="medium">Medium</option>
+      <option value="max" selected>Maximum</option>
+    </select>
+    <label><input type="checkbox" id="projectLightning"> Lightning Mode (faster, fewer checks)</label>
+    <label><input type="checkbox" id="projectSilent"> Silent Mode (suppress console output)</label>
+    <label><input type="checkbox" id="projectFFA"> FFA Mode (no license key required)</label>
+    <textarea id="projectScript" rows="8" placeholder="-- Paste your Lua script here&#10;print('Hello, World!')"></textarea>
+    <div class="modal-buttons">
+      <button onclick="closeModal()">Cancel</button>
+      <button onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="keysModal" class="modal">
+  <div class="modal-content">
+    <h3>Generate License Keys</h3>
+    <input type="hidden" id="keysProjectId">
+    <input type="number" id="keyCount" placeholder="Number of keys (max 500)" value="1" min="1" max="500">
+    <input type="number" id="keyExpiry" placeholder="Expires in days (optional)">
+    <input type="number" id="keyMaxUses" placeholder="Max uses (optional)">
+    <input type="text" id="keyNote" placeholder="Note (optional)">
+    <div class="modal-buttons">
+      <button onclick="closeKeysModal()">Cancel</button>
+      <button onclick="generateKeys()">Generate</button>
+    </div>
+    <div id="keysResult" class="keys-result"></div>
+  </div>
+</div>
+
+<script>
+  let token = localStorage.getItem("surfix_token");
+
+  if (!token) {
+    window.location.href = "/";
+  }
+
+  async function verifyAuth() {
+    try {
+      const res = await fetch("/api/admin/verify", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (!res.ok) throw new Error("Invalid token");
+      const data = await res.json();
+      if (!data.valid) throw new Error("Invalid token");
+      return true;
+    } catch (err) {
+      localStorage.removeItem("surfix_token");
+      window.location.href = "/";
+      return false;
+    }
+  }
+
+  async function api(method, path, body) {
+    const res = await fetch(path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (res.status === 401) {
+      localStorage.removeItem("surfix_token");
+      window.location.href = "/";
+      throw new Error("Unauthorized");
+    }
+    return res.json();
+  }
+
+  async function loadDashboard() {
+    if (!await verifyAuth()) return;
+
+    try {
+      const stats = await api("GET", "/api/admin/stats");
+      document.getElementById("statsGrid").innerHTML = `
+        <div class="stat-card"><div class="stat-number">${stats.projects}</div><div class="stat-label">Projects</div></div>
+        <div class="stat-card"><div class="stat-number">${stats.keys}</div><div class="stat-label">Total Keys</div></div>
+        <div class="stat-card"><div class="stat-number">${stats.active_keys}</div><div class="stat-label">Active Keys</div></div>
+        <div class="stat-card"><div class="stat-number">${stats.auths_today}</div><div class="stat-label">Auths Today</div></div>
+        <div class="stat-card"><div class="stat-number">${stats.auths_ok}</div><div class="stat-label">Success</div></div>
+        <div class="stat-card"><div class="stat-number">${stats.auths_fail}</div><div class="stat-label">Failed</div></div>
+        <div class="stat-card"><div class="stat-number">${stats.active_sessions}</div><div class="stat-label">Active Sessions</div></div>
+      `;
+
+      const projects = await api("GET", "/api/admin/projects");
+      document.getElementById("projectsList").innerHTML = projects.map(p => `
+        <div class="project-item">
+          <div class="project-name">${escapeHtml(p.name)} v${p.version}</div>
+          <div class="project-meta">
+            Keys: ${p.key_count || 0} | Auths: ${p.total_auths || 0} | Level: ${p.protection_level}
+            ${p.lightning ? ' | ⚡ Lightning' : ''}${p.silent ? ' | 🔇 Silent' : ''}${p.ffa ? ' | 🎯 FFA' : ''}
+          </div>
+          <div class="project-actions">
+            <button onclick="editProject('${p.id}')">Edit</button>
+            <button onclick="showGenerateKeys('${p.id}')">Generate Keys</button>
+            <button onclick="viewKeys('${p.id}')">View Keys</button>
+            <button class="btn-danger" onclick="deleteProject('${p.id}')">Delete</button>
+          </div>
+        </div>
+      `).join("") || "<div class='loading'>No projects yet. Click 'New Project' to get started.</div>";
+
+      const logs = await api("GET", "/api/admin/logs?limit=20");
+      if (logs.length === 0) {
+        document.getElementById("logsTable").innerHTML = "<div class='loading'>No auth logs yet.</div>";
+      } else {
+        document.getElementById("logsTable").innerHTML = `
+          <table>
+            <thead><tr><th>Time</th><th>Project</th><th>HWID</th><th>IP</th><th>Status</th><th>Reason</th></tr></thead>
+            <tbody>
+              ${logs.map(l => `
+                <tr>
+                  <td style="white-space: nowrap;">${new Date(l.ts * 1000).toLocaleString()}</td>
+                  <td>${l.project_id?.slice(0, 8) || "—"}</td>
+                  <td><code style="font-size:0.7rem;">${l.hwid?.slice(0, 12) || "—"}${l.hwid?.length > 12 ? "…" : ""}</code></td>
+                  <td>${l.ip || "—"}</td>
+                  <td><span style="color: ${l.status === 'ok' ? '#4ade80' : '#f87171'}">${l.status}</span></td>
+                  <td>${l.reason || "—"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+    } catch (err) {
+      console.error("Load error:", err);
+      document.getElementById("projectsList").innerHTML = "<div class='loading'>Error loading data. Please refresh.</div>";
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  let currentProjectId = null;
+
+  function showCreateProject() {
+    document.getElementById("modalTitle").textContent = "New Project";
+    document.getElementById("editProjectId").value = "";
+    document.getElementById("projectName").value = "";
+    document.getElementById("projectVersion").value = "1.0.0";
+    document.getElementById("projectProtection").value = "max";
+    document.getElementById("projectLightning").checked = false;
+    document.getElementById("projectSilent").checked = false;
+    document.getElementById("projectFFA").checked = false;
+    document.getElementById("projectScript").value = "";
+    document.getElementById("projectModal").classList.add("open");
+  }
+
+  async function editProject(id) {
+    try {
+      const projects = await api("GET", "/api/admin/projects");
+      const p = projects.find(p => p.id === id);
+      if (!p) return;
+      document.getElementById("modalTitle").textContent = "Edit Project";
+      document.getElementById("editProjectId").value = p.id;
+      document.getElementById("projectName").value = p.name;
+      document.getElementById("projectVersion").value = p.version;
+      document.getElementById("projectProtection").value = p.protection_level;
+      document.getElementById("projectLightning").checked = p.lightning === 1;
+      document.getElementById("projectSilent").checked = p.silent === 1;
+      document.getElementById("projectFFA").checked = p.ffa === 1;
+      document.getElementById("projectScript").value = p.script || "";
+      document.getElementById("projectModal").classList.add("open");
+    } catch (err) {
+      alert("Error loading project: " + err.message);
+    }
+  }
+
+  async function saveProject() {
+    const id = document.getElementById("editProjectId").value;
+    const data = {
+      name: document.getElementById("projectName").value.trim(),
+      version: document.getElementById("projectVersion").value.trim() || "1.0.0",
+      protection_level: document.getElementById("projectProtection").value,
+      lightning: document.getElementById("projectLightning").checked,
+      silent: document.getElementById("projectSilent").checked,
+      ffa: document.getElementById("projectFFA").checked,
+      script: document.getElementById("projectScript").value
+    };
+    if (!data.name || !data.script) {
+      alert("Name and script are required");
+      return;
+    }
+    try {
+      const url = id ? `/api/admin/projects/${id}` : "/api/admin/projects";
+      const method = id ? "PUT" : "POST";
+      const result = await api(method, url, data);
+      if (result.locker_seed) {
+        alert(`Source Locker Seed (SAVE THIS): ${result.locker_seed}\nYou will not see it again.`);
+      }
+      closeModal();
+      loadDashboard();
+    } catch (err) {
+      alert("Error saving project: " + err.message);
+    }
+  }
+
+  function closeModal() {
+    document.getElementById("projectModal").classList.remove("open");
+  }
+
+  function showGenerateKeys(projectId) {
+    currentProjectId = projectId;
+    document.getElementById("keysProjectId").value = projectId;
+    document.getElementById("keyCount").value = "1";
+    document.getElementById("keyExpiry").value = "";
+    document.getElementById("keyMaxUses").value = "";
+    document.getElementById("keyNote").value = "";
+    document.getElementById("keysResult").innerHTML = "";
+    document.getElementById("keysModal").classList.add("open");
+  }
+
+  function closeKeysModal() {
+    document.getElementById("keysModal").classList.remove("open");
+  }
+
+  async function generateKeys() {
+    const projectId = document.getElementById("keysProjectId").value;
+    const count = parseInt(document.getElementById("keyCount").value) || 1;
+    const expires_in_days = document.getElementById("keyExpiry").value ? parseInt(document.getElementById("keyExpiry").value) : undefined;
+    const max_activations = document.getElementById("keyMaxUses").value ? parseInt(document.getElementById("keyMaxUses").value) : undefined;
+    const note = document.getElementById("keyNote").value;
+    
+    try {
+      const keys = await api("POST", `/api/admin/projects/${projectId}/keys`, { count, expires_in_days, max_activations, note });
+      document.getElementById("keysResult").innerHTML = `
+        <div style="margin-top: 1rem;">
+          <strong style="color: #4ade80;">✓ Generated ${keys.length} key(s)</strong>
+          <textarea rows="5" style="width:100%; margin-top:0.5rem; background:#000; border:1px solid #333; color:#4ade80; padding:0.5rem; font-family:monospace; font-size:0.75rem;" readonly>${keys.map(k => k.key).join("\n")}</textarea>
+          <button onclick="copyKeys()" style="margin-top:0.5rem; width:100%;">Copy All</button>
+        </div>
+      `;
+    } catch (err) {
+      alert("Error generating keys: " + err.message);
+    }
+  }
+
+  function copyKeys() {
+    const ta = document.querySelector("#keysResult textarea");
+    if (ta) { ta.select(); document.execCommand("copy"); alert("Copied to clipboard!"); }
+  }
+
+  async function viewKeys(projectId) {
+    try {
+      const keys = await api("GET", `/api/admin/projects/${projectId}/keys`);
+      if (keys.length === 0) {
+        alert("No keys for this project");
+      } else {
+        alert(keys.map(k => `${k.key_value} (${k.activations}/${k.max_activations || "∞"} uses, HWID: ${k.hwid || "free"}, Discord: ${k.discord_id || "none"})`).join("\n"));
+      }
+    } catch (err) {
+      alert("Error loading keys: " + err.message);
+    }
+  }
+
+  async function deleteProject(id) {
+    if (confirm("Delete this project and ALL its keys? This cannot be undone.")) {
+      try {
+        await api("DELETE", `/api/admin/projects/${id}`);
+        loadDashboard();
+      } catch (err) {
+        alert("Error deleting project: " + err.message);
+      }
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("surfix_token");
+    window.location.href = "/";
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>
