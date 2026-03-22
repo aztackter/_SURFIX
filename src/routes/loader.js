@@ -13,7 +13,7 @@ const LOADER_SECRET = process.env.LOADER_SECRET;
 if (!process.env.PUBLIC_URL) {
   throw new Error("PUBLIC_URL must be set in environment");
 }
-const HOST = process.env.PUBLIC_URL.replace(/\/$/, ""); // remove trailing slash
+const HOST = process.env.PUBLIC_URL.replace(/\/$/, "");
 
 const MAX_CACHE_SIZE = 500;
 const loaderCache = new Map();
@@ -150,7 +150,10 @@ router.get("/loader/:projectId.lua", async (req, res) => {
     const ffa = project.ffa === 1;
     const accept = req.headers.accept || "";
     const userAgent = req.headers["user-agent"] || "";
-    const isBrowser = accept.includes("text/html") && !accept.includes("application/json") && /Gecko|Chrome|Safari|Firefox|Edg/.test(userAgent);
+    
+    const executorPatterns = /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor/i;
+    const isExecutor = executorPatterns.test(userAgent);
+    const isBrowser = accept.includes("text/html") && !accept.includes("application/json") && /Mozilla|Chrome|Safari|Firefox|Edg/i.test(userAgent) && !isExecutor;
 
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
