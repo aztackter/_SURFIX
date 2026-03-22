@@ -31,7 +31,7 @@ app.use("/api/v1/heartbeat", rateLimit({ windowMs: 60_000, max: 120, standardHea
 app.use("/api/admin/login",  rateLimit({ windowMs: 60_000, max: 10,  standardHeaders: true }));
 
 app.use("/api/public",   require("./routes/public"));
-app.use("/api",          require("./routes/loader"));   // ← ONLY THIS – do NOT also mount "/api/loader"
+app.use("/api",          require("./routes/loader"));   // ← mounts loader at /api/loader/...
 app.use("/api/v1",       require("./routes/auth"));
 app.use("/api/v1",       require("./routes/heartbeat"));
 app.use("/api/admin",    require("./routes/admin"));
