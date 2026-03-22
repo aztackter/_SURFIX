@@ -1,1 +1,30 @@
+name: Fix Line Endings
+on:
+  push:
+    branches: [ main, master ]
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Strip carriage returns from all JS files
+        run: |
+          find . -name "*.js" -not -path "*/node_modules/*" | while read f; do
+            sed -i 's/\r//' "$f"
+          done
+          find . -name "*.json" -not -path "*/node_modules/*" | while read f; do
+            sed -i 's/\r//' "$f"
+          done
+          find . -name "*.html" -not -path "*/node_modules/*" | while read f; do
+            sed -i 's/\r//' "$f"
+          done
+
+      - name: Commit fixed files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet || git commit -am "fix: normalize line endings to LF"
+          git push
