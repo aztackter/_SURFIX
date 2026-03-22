@@ -66,7 +66,7 @@ const loaderLimiter = rateLimit({
   legacyHeaders: false
 });
 
-router.use("/loader", loaderLimiter);
+router.use(loaderLimiter);
 
 function buildRawLoader(project, ffa) {
   return `-- ${escapeLua(project.name)} v${escapeLua(project.version)} | Protected by SURFIX
