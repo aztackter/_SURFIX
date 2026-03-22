@@ -1,18 +1,19 @@
 const crypto = require("crypto");
 
 function randHex(n) { return crypto.randomBytes(n).toString("hex"); }
-function randId() { return "_" + randHex(4).toUpperCase(); }
+function randId()  { return "_" + randHex(4).toUpperCase(); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function fnv32(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
-    h = (h * 16777619) >>> 0;
+    h = Math.imul(h, 16777619) >>> 0;
   }
   return h;
 }
 
+// FIXED SEC-18: 16-byte key instead of 4 bytes for stronger XOR obfuscation
 function xorB64(str, keyHex) {
   const src = Buffer.from(str, "utf8");
   const key = Buffer.from(keyHex, "hex");
@@ -49,19 +50,19 @@ function encryptStrings(source) {
   while ((m = pattern.exec(source)) !== null) {
     const raw = m[0];
     const content = m[1] || m[2];
-    if (!strings.has(raw) && !/^[%s]+$/.test(content)) {
+    if (!strings.has(raw) && !/^[\s]+$/.test(content)) {
       strings.set(raw, { content, id: randId() });
     }
   }
-
   if (strings.size === 0) return { code: source, tableCode: "" };
 
   const tableId = randId();
-  const keyHex = randHex(8);
+  // FIXED SEC-18: 16-byte XOR key
+  const keyHex = randHex(16);
   const keyB64 = Buffer.from(keyHex, "hex").toString("base64");
 
   let tableCode = `${LUA_B64_DEC}\n${LUA_XOR_DEC}\nlocal ${tableId}={}\n`;
-  tableCode += `local _STK=_SFXD(_SFB64("${keyB64}"),string.rep(string.char(0x42),8))\n`;
+  tableCode += `local _STK=_SFXD(_SFB64("${keyB64}"),string.rep(string.char(0x42),16))\n`;
 
   for (const [, { content, id }] of strings) {
     const encB64 = xorB64(content, keyHex);
@@ -73,13 +74,14 @@ function encryptStrings(source) {
     const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     out = out.replace(new RegExp(escaped, "g"), `${tableId}["${id}"]`);
   }
-
   return { code: out, tableCode };
 }
 
 function flattenControlFlow(source) {
-  const lines = source.split("\n").filter(l => l.trim().length > 0);
-  if (lines.length < 4) return source;
+  // FIXED BUG-15: Normalize line endings before processing to avoid \r in output
+  const normalized = source.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = normalized.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length < 4) return normalized;
 
   const chunks = [];
   let i = 0;
@@ -94,64 +96,62 @@ function flattenControlFlow(source) {
   const stateVar = randId();
 
   let out = `local ${stateVar}=${stateIds[0]}\nlocal ${dispatchVar}=true\nwhile ${dispatchVar} do\n`;
-
   for (let j = 0; j < chunks.length; j++) {
     const cur = stateIds[j];
     const next = stateIds[j + 1];
     out += `if ${stateVar}==${cur} then\n${chunks[j]}\n`;
-    if (next !== undefined) {
-      out += `${stateVar}=${next}\n`;
-    } else {
-      out += `${dispatchVar}=false\n`;
-    }
+    if (next !== undefined) out += `${stateVar}=${next}\n`;
+    else out += `${dispatchVar}=false\n`;
     out += `end\n`;
   }
-
-  out += `end`;
-  return out;
+  return out + "end";
 }
 
 function injectOpaquePredicates(source) {
+  // FIXED BUG-16: All junk is syntactically valid Lua
   const preds = [
-    `(${randInt(2, 9)}*${randInt(2, 9)}>${randInt(1, 3)})`,
-    `(math.abs(-${randInt(5, 50)})==${randInt(5, 50)})`,
+    `(${randInt(2,9)}*${randInt(2,9)}>${randInt(1,3)})`,
+    `(math.abs(-${randInt(5,50)})==${randInt(5,50)})`,
     `(type("")=="string")`,
     `(#"surfix">0)`,
-    `(${randInt(1, 5)}>${randInt(100, 999)})`,
-    `(type(nil)=="string")`,
+    `(${randInt(1,5)}>${randInt(100,999)})`,
+    `(type(nil)~="string")`,
   ];
-  const junk = [
-    `if ${preds[randInt(4, 5)]} then local _=${randId()}=function() end end`,
-    `do local _${randHex(3)}=${randInt(1, 999)} end`,
-    `if ${preds[randInt(0, 3)]} then else local _${randHex(3)}=nil end`,
+  // Only valid Lua junk — no assignment inside expressions, no invalid syntax
+  const junkTemplates = [
+    () => `do local ${randId()}=${randInt(1,999)} end`,
+    () => `if ${preds[randInt(0,3)]} then local ${randId()}=${randInt(1,99)} end`,
+    () => `do local ${randId()}=string.rep("x",${randInt(1,4)}) end`,
+    () => `if ${preds[randInt(4,5)]} then else end`,
   ];
   const lines = source.split("\n");
   const out = [];
   for (const line of lines) {
     out.push(line);
-    if (Math.random() < 0.12) {
-      out.push(junk[randInt(0, junk.length - 1)]);
+    if (Math.random() < 0.1) {
+      out.push(junkTemplates[randInt(0, junkTemplates.length - 1)]());
     }
   }
   return out.join("\n");
 }
 
 function xorEncryptSource(source) {
+  // FIXED SEC-18: 16-byte key for the payload XOR
   const keyHex = randHex(16);
   const encB64 = xorB64(source, keyHex);
   const keyB64 = Buffer.from(keyHex, "hex").toString("base64");
   return { encB64, keyB64 };
 }
 
-function buildVMWrapper(encB64, keyB64, checksum, lightning) {
+function buildVMWrapper(encB64, keyB64, checksum) {
   const OP_LOADK = randInt(10, 60);
-  const OP_EXEC = randInt(61, 120);
-  const OP_CHK = randInt(121, 180);
-  const OP_END = randInt(181, 240);
-  const vmId = randId();
+  const OP_EXEC  = randInt(61, 120);
+  const OP_CHK   = randInt(121, 180);
+  const OP_END   = randInt(181, 240);
+  const vmId     = randId();
 
   const vm = `
-local function ${vmId}(bc, kp)
+local function ${vmId}(bc,kp)
   local _ip=1
   local function _rb() local b=bc:byte(_ip) _ip=_ip+1 return b end
   local _acc=nil
@@ -161,7 +161,7 @@ local function ${vmId}(bc, kp)
       local idx=_rb()
       _acc=kp[idx]
     elseif op==${OP_CHK} then
-      if _SFFNV(_acc):sub(1,8)~="${checksum.slice(0, 8)}" then
+      if _SFFNV(_acc):sub(1,8)~="${checksum.slice(0,8)}" then
         error("[SURFIX] Integrity violation")
       end
     elseif op==${OP_EXEC} then
@@ -176,7 +176,6 @@ end`;
 
   const bytecode = [OP_LOADK, 1, OP_CHK, OP_EXEC, OP_END];
   const bcB64 = Buffer.from(bytecode).toString("base64");
-
   return { vm, bcB64, vmId };
 }
 
@@ -188,7 +187,7 @@ local function _SFADB()
     if debug and debug.sethook then
       local _t=0
       debug.sethook(function() _t=_t+1 end,"l")
-      local _a,_b=0,0
+      local _a=0
       for i=1,10 do _a=_a+i end
       debug.sethook()
       if _t>0 then error("D") end
@@ -205,39 +204,41 @@ pcall(_SFADB)`;
 
 function buildJunkCode() {
   const blocks = [];
-  for (let i = 0; i < randInt(3, 7); i++) {
+  for (let i = 0; i < randInt(3, 6); i++) {
     const id = randId();
-    const n = randInt(5, 50);
-    const choice = i % 3;
-    if (choice === 0)
+    const n  = randInt(5, 40);
+    const ch = i % 3;
+    // FIXED BUG-16: All junk is valid Lua
+    if (ch === 0)
       blocks.push(`local function ${id}() local _x=0 for _i=1,${n} do _x=_x+_i end return _x end`);
-    else if (choice === 1)
-      blocks.push(`local ${id}=setmetatable({},{__index=function() return ${randInt(1, 999)} end})`);
+    else if (ch === 1)
+      blocks.push(`local ${id}=setmetatable({},{__index=function(_,_k) return ${randInt(1,999)} end})`);
     else
-      blocks.push(`local ${id}=string.rep("${randHex(2)}",${randInt(1, 4)})`);
+      blocks.push(`local ${id}=string.rep("${randHex(2)}",${randInt(1,3)})`);
   }
   return blocks.join("\n");
 }
 
 class SurfixObfuscator {
   constructor(config = {}) {
-    this.level = config.level || "max";
+    this.level    = config.level    || "max";
     this.lightning = !!config.lightning;
-    this.silent = !!config.silent;
+    this.silent    = !!config.silent;
   }
 
   obfuscate(source) {
+    // FIXED BUG-15: normalize line endings at entry point
+    source = source.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
     const techniques = [];
     let payload = source;
 
     if (this.level === "light") {
       const { encB64, keyB64 } = xorEncryptSource(payload);
       const cs = fnv32(payload).toString(16).padStart(8, "0");
-      return {
-        code: this._lightWrap(encB64, keyB64, cs),
-        techniques: ["xor_encrypt", "integrity_check"],
-        size: 0
-      };
+      // FIXED BUG-14: return actual code.length not 0
+      const code = this._lightWrap(encB64, keyB64, cs);
+      return { code, techniques: ["xor_encrypt", "integrity_check"], size: code.length };
     }
 
     const { code: strCode, tableCode } = encryptStrings(payload);
@@ -258,8 +259,7 @@ class SurfixObfuscator {
     techniques.push("xor_encrypt");
 
     const checksum = fnv32(payload).toString(16).padStart(8, "0");
-
-    const { vm, bcB64, vmId } = buildVMWrapper(encB64, keyB64, checksum, this.lightning);
+    const { vm, bcB64, vmId } = buildVMWrapper(encB64, keyB64, checksum);
     techniques.push("vm_bytecode");
 
     const antiTamper = buildAntiTamper(this.lightning);
@@ -271,7 +271,7 @@ class SurfixObfuscator {
       techniques.push("junk_injection");
     }
 
-    const silentPre = this.silent ? `local _SFP=print print=function() end` : "";
+    const silentPre  = this.silent ? `local _SFP=print print=function() end` : "";
     const silentPost = this.silent ? `print=_SFP` : "";
     if (this.silent) techniques.push("silent_mode");
 
@@ -302,7 +302,7 @@ class SurfixObfuscator {
       LUA_FNV,
       `local _k=_SFB64("${keyB64}")`,
       `local _p=_SFXD(_SFB64("${encB64}"),_k)`,
-      `if _SFFNV(_p):sub(1,8)~="${checksum.slice(0, 8)}" then error("[SURFIX] Integrity check failed") return end`,
+      `if _SFFNV(_p):sub(1,8)~="${checksum.slice(0,8)}" then error("[SURFIX] Integrity check failed") return end`,
       `local _fn,_e=loadstring(_p) if not _fn then error("[SURFIX] ".._e) end _fn()`,
     ].join("\n");
   }
