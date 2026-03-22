@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -15,347 +16,350 @@
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-  :root {
-    --bg: #01010c;
-    --v: #7c3aed;
-    --v2: #a855f7;
-    --v3: #c084fc;
-    --c2: #22d3ee;
-    --pk: #ec4899;
-    --pk2: #f472b6;
-    --text: #f2f2ff;
-    --muted: rgba(242,242,255,0.38);
-    --F: 'Syne', sans-serif;
-    --M: 'Space Mono', monospace;
-  }
+:root {
+–bg: #01010c;
+–v: #7c3aed;
+–v2: #a855f7;
+–v3: #c084fc;
+–c2: #22d3ee;
+–pk: #ec4899;
+–pk2: #f472b6;
+–text: #f2f2ff;
+–muted: rgba(242,242,255,0.38);
+–F: ‘Syne’, sans-serif;
+–M: ‘Space Mono’, monospace;
+}
 
-  html, body {
-    height: 100%;
-  }
+html, body {
+height: 100%;
+}
 
-  body {
-    background: radial-gradient(circle at 20% 30%, rgba(88,28,135,0.35), #010101 80%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--F);
-    padding: 1.5rem;
-    position: relative;
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-  }
+body {
+background: radial-gradient(circle at 20% 30%, rgba(88,28,135,0.35), #010101 80%);
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(–F);
+padding: 1.5rem;
+position: relative;
+color: var(–text);
+-webkit-font-smoothing: antialiased;
+}
 
-  /* Subtle grid overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
-    background-size: 54px 54px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* Subtle grid overlay */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+background-size: 54px 54px;
+pointer-events: none;
+z-index: 0;
+}
 
-  .container {
-    max-width: 520px;
-    width: 100%;
-    position: relative;
-    z-index: 2;
-  }
+.container {
+max-width: 520px;
+width: 100%;
+position: relative;
+z-index: 2;
+}
 
-  /* Ambient glow blob */
-  .glow-blob {
-    position: fixed;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 0;
-    animation: blobPulse 6s ease-in-out infinite;
-  }
-  @keyframes blobPulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
-    50%       { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
-  }
+/* Ambient glow blob */
+.glow-blob {
+position: fixed;
+width: 600px;
+height: 600px;
+border-radius: 50%;
+background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%);
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+pointer-events: none;
+z-index: 0;
+animation: blobPulse 6s ease-in-out infinite;
+}
+@keyframes blobPulse {
+0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+50%       { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+}
 
-  /* Card */
-  .card {
-    background: rgba(6, 6, 20, 0.90);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(139,92,246,0.35);
-    border-radius: 40px;
-    padding: 2.5rem 2rem 2rem;
-    box-shadow:
-      0 0 0 1px rgba(139,92,246,0.1),
-      0 40px 60px -20px rgba(0,0,0,0.65),
-      inset 0 1px 0 rgba(255,255,255,0.06);
-    animation: cardIn 0.7s cubic-bezier(0.2,0.9,0.4,1.1) both;
-  }
-  @keyframes cardIn {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
+/* Card */
+.card {
+background: rgba(6, 6, 20, 0.90);
+backdrop-filter: blur(30px);
+-webkit-backdrop-filter: blur(30px);
+border: 1px solid rgba(139,92,246,0.35);
+border-radius: 40px;
+padding: 2.5rem 2rem 2rem;
+box-shadow:
+0 0 0 1px rgba(139,92,246,0.1),
+0 40px 60px -20px rgba(0,0,0,0.65),
+inset 0 1px 0 rgba(255,255,255,0.06);
+animation: cardIn 0.7s cubic-bezier(0.2,0.9,0.4,1.1) both;
+}
+@keyframes cardIn {
+from { opacity: 0; transform: translateY(24px) scale(0.97); }
+to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-  /* Logo */
-  .logo {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.4rem;
-  }
-  .logo-icon {
-    width: 66px;
-    height: 66px;
-    border-radius: 22px;
-    background: linear-gradient(135deg, #7c3aed, #ec4899, #f472b6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    box-shadow: 0 16px 32px -10px rgba(124,58,237,0.55);
-    animation: logoBob 4s ease-in-out infinite;
-  }
-  @keyframes logoBob {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-5px); }
-  }
+/* Logo */
+.logo {
+display: flex;
+justify-content: center;
+margin-bottom: 1.4rem;
+}
+.logo-icon {
+width: 66px;
+height: 66px;
+border-radius: 22px;
+background: linear-gradient(135deg, #7c3aed, #ec4899, #f472b6);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 32px;
+box-shadow: 0 16px 32px -10px rgba(124,58,237,0.55);
+animation: logoBob 4s ease-in-out infinite;
+}
+@keyframes logoBob {
+0%, 100% { transform: translateY(0); }
+50%       { transform: translateY(-5px); }
+}
 
-  /* Title */
-  h1 {
-    font-size: clamp(1.6rem, 5vw, 2rem);
-    font-weight: 800;
-    text-align: center;
-    background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #f472b6 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    margin-bottom: 0.6rem;
-    letter-spacing: -0.025em;
-    line-height: 1.15;
-  }
+/* Title */
+h1 {
+font-size: clamp(1.6rem, 5vw, 2rem);
+font-weight: 800;
+text-align: center;
+background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #f472b6 100%);
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+margin-bottom: 0.6rem;
+letter-spacing: -0.025em;
+line-height: 1.15;
+}
 
-  /* Badge */
-  .badge {
-    text-align: center;
-    margin-bottom: 1.4rem;
-  }
-  .badge span {
-    display: inline-block;
-    background: rgba(139,92,246,0.15);
-    border: 1px solid rgba(139,92,246,0.4);
-    border-radius: 60px;
-    padding: 0.28rem 1.1rem;
-    font-size: 0.62rem;
-    font-family: var(--M);
-    color: var(--v3);
-    letter-spacing: 0.12em;
-    font-weight: 700;
-  }
+/* Badge */
+.badge {
+text-align: center;
+margin-bottom: 1.4rem;
+}
+.badge span {
+display: inline-block;
+background: rgba(139,92,246,0.15);
+border: 1px solid rgba(139,92,246,0.4);
+border-radius: 60px;
+padding: 0.28rem 1.1rem;
+font-size: 0.62rem;
+font-family: var(–M);
+color: var(–v3);
+letter-spacing: 0.12em;
+font-weight: 700;
+}
 
-  /* Description */
-  .description {
-    text-align: center;
-    color: rgba(255,255,255,0.42);
-    font-size: 0.88rem;
-    line-height: 1.65;
-    margin-bottom: 1.6rem;
-  }
+/* Description */
+.description {
+text-align: center;
+color: rgba(255,255,255,0.42);
+font-size: 0.88rem;
+line-height: 1.65;
+margin-bottom: 1.6rem;
+}
 
-  /* Code block */
-  .code-block {
-    background: #020208;
-    border: 1px solid rgba(139,92,246,0.28);
-    border-radius: 22px;
-    padding: 1rem 1.1rem;
-    margin: 0 0 1.2rem;
-    position: relative;
-    overflow: hidden;
-  }
-  .code-block::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), transparent);
-  }
-  .code-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 0.8rem;
-    font-family: var(--M);
-    font-size: 0.65rem;
-    color: #3d4f67;
-  }
-  .dot { width: 11px; height: 11px; border-radius: 50%; }
-  .dot-r { background: #ff5f56; }
-  .dot-y { background: #ffbd2e; }
-  .dot-g { background: #27c93f; }
-  .code-file {
-    margin-left: auto;
-    color: rgba(255,255,255,0.18);
-  }
+/* Code block */
+.code-block {
+background: #020208;
+border: 1px solid rgba(139,92,246,0.28);
+border-radius: 22px;
+padding: 1rem 1.1rem;
+margin: 0 0 1.2rem;
+position: relative;
+overflow: hidden;
+}
+.code-block::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 1px;
+background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), transparent);
+}
+.code-header {
+display: flex;
+align-items: center;
+gap: 6px;
+margin-bottom: 0.8rem;
+font-family: var(–M);
+font-size: 0.65rem;
+color: #3d4f67;
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot-r { background: #ff5f56; }
+.dot-y { background: #ffbd2e; }
+.dot-g { background: #27c93f; }
+.code-file {
+margin-left: auto;
+color: rgba(255,255,255,0.18);
+}
 
-  code {
-    display: block;
-    font-family: var(--M);
-    font-size: 0.76rem;
-    color: #86efac;
-    word-break: break-all;
-    white-space: pre-wrap;
-    line-height: 1.6;
-    padding-right: 3.5rem;
-    user-select: all;
-  }
+code {
+display: block;
+font-family: var(–M);
+font-size: 0.76rem;
+color: #86efac;
+word-break: break-all;
+white-space: pre-wrap;
+line-height: 1.6;
+padding-right: 3.5rem;
+user-select: all;
+}
 
-  .copy-btn {
-    position: absolute;
-    top: 0.85rem;
-    right: 0.9rem;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(139,92,246,0.35);
-    border-radius: 10px;
-    padding: 0.28rem 0.75rem;
-    font-size: 0.62rem;
-    font-family: var(--M);
-    color: rgba(255,255,255,0.35);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    letter-spacing: 0.04em;
-  }
-  .copy-btn:hover {
-    background: rgba(139,92,246,0.25);
-    border-color: var(--v);
-    color: var(--v3);
-  }
-  .copy-btn.copied {
-    background: rgba(16,185,129,0.15);
-    border-color: rgba(16,185,129,0.4);
-    color: #4ade80;
-  }
+.copy-btn {
+position: absolute;
+top: 0.85rem;
+right: 0.9rem;
+background: rgba(255,255,255,0.04);
+border: 1px solid rgba(139,92,246,0.35);
+border-radius: 10px;
+padding: 0.28rem 0.75rem;
+font-size: 0.62rem;
+font-family: var(–M);
+color: rgba(255,255,255,0.35);
+cursor: pointer;
+transition: all 0.2s ease;
+letter-spacing: 0.04em;
+}
+.copy-btn:hover {
+background: rgba(139,92,246,0.25);
+border-color: var(–v);
+color: var(–v3);
+}
+.copy-btn.copied {
+background: rgba(16,185,129,0.15);
+border-color: rgba(16,185,129,0.4);
+color: #4ade80;
+}
 
-  /* Note */
-  .note {
-    background: rgba(139,92,246,0.08);
-    border: 1px solid rgba(139,92,246,0.18);
-    border-radius: 16px;
-    padding: 0.85rem 1.1rem;
-    margin-bottom: 1.2rem;
-    text-align: center;
-    font-size: 0.72rem;
-    font-family: var(--M);
-    color: rgba(255,255,255,0.38);
-    line-height: 1.7;
-  }
-  .note strong {
-    color: var(--v3);
-    display: block;
-    margin-bottom: 0.2rem;
-  }
+/* Note */
+.note {
+background: rgba(139,92,246,0.08);
+border: 1px solid rgba(139,92,246,0.18);
+border-radius: 16px;
+padding: 0.85rem 1.1rem;
+margin-bottom: 1.2rem;
+text-align: center;
+font-size: 0.72rem;
+font-family: var(–M);
+color: rgba(255,255,255,0.38);
+line-height: 1.7;
+}
+.note strong {
+color: var(–v3);
+display: block;
+margin-bottom: 0.2rem;
+}
 
-  /* Steps */
-  .steps {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    margin-bottom: 1.4rem;
-  }
-  .step {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.38);
-  }
-  .step-num {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(124,58,237,0.2);
-    border: 1px solid rgba(124,58,237,0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.62rem;
-    font-family: var(--M);
-    font-weight: 700;
-    color: var(--v3);
-    flex-shrink: 0;
-  }
+/* Steps */
+.steps {
+display: flex;
+flex-direction: column;
+gap: 0.55rem;
+margin-bottom: 1.4rem;
+}
+.step {
+display: flex;
+align-items: center;
+gap: 0.75rem;
+font-size: 0.8rem;
+color: rgba(255,255,255,0.38);
+}
+.step-num {
+width: 22px;
+height: 22px;
+border-radius: 50%;
+background: rgba(124,58,237,0.2);
+border: 1px solid rgba(124,58,237,0.35);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 0.62rem;
+font-family: var(–M);
+font-weight: 700;
+color: var(–v3);
+flex-shrink: 0;
+}
 
-  /* Footer warning */
-  .warning {
-    text-align: center;
-    font-size: 0.63rem;
-    color: rgba(255,255,255,0.18);
-    padding-top: 1rem;
-    border-top: 1px solid rgba(139,92,246,0.12);
-    line-height: 1.6;
-  }
-  .warning a {
-    color: var(--v3);
-    text-decoration: none;
-  }
+/* Footer warning */
+.warning {
+text-align: center;
+font-size: 0.63rem;
+color: rgba(255,255,255,0.18);
+padding-top: 1rem;
+border-top: 1px solid rgba(139,92,246,0.12);
+line-height: 1.6;
+}
+.warning a {
+color: var(–v3);
+text-decoration: none;
+}
 
-  @media (max-width: 480px) {
-    .card { padding: 1.8rem 1.2rem 1.5rem; border-radius: 28px; }
-    h1   { font-size: 1.4rem; }
-    code { font-size: 0.66rem; }
-    .logo-icon { width: 54px; height: 54px; font-size: 26px; }
-  }
+@media (max-width: 480px) {
+.card { padding: 1.8rem 1.2rem 1.5rem; border-radius: 28px; }
+h1   { font-size: 1.4rem; }
+code { font-size: 0.66rem; }
+.logo-icon { width: 54px; height: 54px; font-size: 26px; }
+}
 </style>
+
 </head>
 <body>
 <div class="glow-blob"></div>
 <div class="container">
   <div class="card">
 
-    <div class="logo">
-      <div class="logo-icon">🔒</div>
-    </div>
+```
+<div class="logo">
+  <div class="logo-icon">🔒</div>
+</div>
 
-    <h1>__PROJECT_NAME__</h1>
+<h1>__PROJECT_NAME__</h1>
 
-    <div class="badge"><span>✦ SURFIX PROTECTED ✦</span></div>
+<div class="badge"><span>✦ SURFIX PROTECTED ✦</span></div>
 
-    <p class="description">
-      This script is protected by <strong style="color:var(--v3);">SURFIX</strong> —
-      a multi-layer Lua obfuscation and licensing system.
-    </p>
+<p class="description">
+  This script is protected by <strong style="color:var(--v3);">SURFIX</strong> —
+  a multi-layer Lua obfuscation and licensing system.
+</p>
 
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><span>Copy the loadstring below into your executor</span></div>
-      <div class="step"><div class="step-num">2</div><span>Paste your license key where indicated</span></div>
-      <div class="step"><div class="step-num">3</div><span>Execute — the script loads securely from the server</span></div>
-    </div>
+<div class="steps">
+  <div class="step"><div class="step-num">1</div><span>Copy the loadstring below into your executor</span></div>
+  <div class="step"><div class="step-num">2</div><span>Paste your license key where indicated</span></div>
+  <div class="step"><div class="step-num">3</div><span>Execute — the script loads securely from the server</span></div>
+</div>
 
-    <div class="code-block">
-      <div class="code-header">
-        <div class="dot dot-r"></div>
-        <div class="dot dot-y"></div>
-        <div class="dot dot-g"></div>
-        <span class="code-file">loader.lua</span>
-      </div>
-      <code id="loader-code">loadstring(game:HttpGet(""))() </code>
-      <button class="copy-btn" id="copyBtn" onclick="copyCode()">Copy</button>
-    </div>
+<div class="code-block">
+  <div class="code-header">
+    <div class="dot dot-r"></div>
+    <div class="dot dot-y"></div>
+    <div class="dot dot-g"></div>
+    <span class="code-file">loader.lua</span>
+  </div>
+  <code id="loader-code">loadstring(game:HttpGet(""))() </code>
+  <button class="copy-btn" id="copyBtn" onclick="copyCode()">Copy</button>
+</div>
 
-    <div class="note">
-      <strong>📜 Loadstring — Roblox / FiveM compatible</strong>
-      __FFA_NOTE__
-    </div>
+<div class="note">
+  <strong>📜 Loadstring — Roblox / FiveM compatible</strong>
+  __FFA_NOTE__
+</div>
 
-    <div class="warning">
-      ⚠️ Protected content — script source is encrypted and licensed.<br>
-      Unauthorized redistribution is prohibited · <a href="#">SURFIX</a>
-    </div>
+<div class="warning">
+  ⚠️ Protected content — script source is encrypted and licensed.<br>
+  Unauthorized redistribution is prohibited · <a href="#">SURFIX</a>
+</div>
+```
 
   </div>
 </div>
@@ -444,5 +448,6 @@ function fallbackCopy(text, btn) {
   document.body.removeChild(ta);
 }
 </script>
+
 </body>
 </html>
