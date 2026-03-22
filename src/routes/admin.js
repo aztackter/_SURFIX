@@ -119,7 +119,7 @@ router.get("/projects/:id", auth, async (req, res) => {
 });
 
 router.post("/projects", auth, async (req, res) => {
-  const { name, description, script, version, protection_level, lightning, silent, ffa, heartbeat, source_locker } = req.body;
+  const { name, description, script, version, protection_level, lightning, silent, ffa, heartbeat, source_locker, obfuscate } = req.body;
   if (!name || !script) return res.status(400).json({ error: "name and script required" });
 
   const id = uuidv4();
@@ -134,10 +134,10 @@ router.post("/projects", auth, async (req, res) => {
 
   try {
     await db.run(`INSERT INTO projects
-      (id, user_id, name, description, script, version, script_version, protection_level, lightning, silent, ffa, heartbeat, source_locker)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+      (id, user_id, name, description, script, version, script_version, protection_level, lightning, silent, ffa, heartbeat, source_locker, obfuscate)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)`,
       [id, req.user.id, name, description || "", finalScript, version || "1.0.0",
-        protection_level || "max", lightning ? 1 : 0, silent ? 1 : 0, ffa ? 1 : 0, heartbeat || 0, source_locker ? 1 : 0]);
+        protection_level || "max", lightning ? 1 : 0, silent ? 1 : 0, ffa ? 1 : 0, heartbeat || 0, source_locker ? 1 : 0, obfuscate !== undefined ? (obfuscate ? 1 : 0) : 1]);
 
     const proj = await db.get("SELECT * FROM projects WHERE id = ?", [id]);
     if (seedToReturn) proj.locker_seed = seedToReturn;
@@ -148,7 +148,7 @@ router.post("/projects", auth, async (req, res) => {
 });
 
 router.put("/projects/:id", auth, async (req, res) => {
-  const { name, description, script, version, protection_level, lightning, silent, ffa, heartbeat, verified, locker_seed } = req.body;
+  const { name, description, script, version, protection_level, lightning, silent, ffa, heartbeat, verified, locker_seed, obfuscate } = req.body;
   
   try {
     const p = await db.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
@@ -185,6 +185,7 @@ router.put("/projects/:id", auth, async (req, res) => {
     if (ffa !== undefined) { updates.push("ffa = ?"); values.push(ffa ? 1 : 0); }
     if (heartbeat !== undefined) { updates.push("heartbeat = ?"); values.push(heartbeat); }
     if (verified !== undefined) { updates.push("verified = ?"); values.push(verified ? 1 : 0); }
+    if (obfuscate !== undefined) { updates.push("obfuscate = ?"); values.push(obfuscate ? 1 : 0); }
     if (versionBumped) { updates.push("script_version = script_version + 1"); }
     updates.push("updated_at = strftime('%s', 'now')");
     values.push(req.params.id);
