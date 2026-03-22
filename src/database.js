@@ -2,25 +2,35 @@ const sqlite3 = require("sqlite3").verbose();
 const path    = require("path");
 const fs      = require("fs");
 const bcrypt  = require("bcryptjs");
+const crypto  = require("crypto");
 
-// ─── Boot-time secret validation ─────────────────────────────────────────────
-const REQUIRED_SECRETS = ["JWT_SECRET", "LOADER_SECRET", "SESSION_SECRET"];
-for (const key of REQUIRED_SECRETS) {
-  const val = process.env[key] || "";
-  if (!val || val.startsWith("CHANGE_ME") || val.length < 32) {
-    console.error(`[FATAL] ${key} is missing or too short (min 32 chars).`);
-    process.exit(1);
-  }
+// ─── Secret validation ────────────────────────────────────────────────────────
+// Only JWT_SECRET is truly required — crash without it.
+// LOADER_SECRET and SESSION_SECRET fall back to deterministic derives from
+// JWT_SECRET so existing deployments that only set JWT_SECRET keep working.
+const JWT_SECRET = process.env.JWT_SECRET || "";
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error("[FATAL] JWT_SECRET is missing or too short (min 32 chars). Set it in Railway variables.");
+  process.exit(1);
 }
+
+// Derive fallbacks if not explicitly set — still unique per deployment
+const LOADER_SECRET  = process.env.LOADER_SECRET  || crypto.createHmac("sha256", JWT_SECRET).update("loader").digest("hex");
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.createHmac("sha256", JWT_SECRET).update("session").digest("hex");
+
+// Export the resolved secrets so index.js can use them without re-reading env
+process.env.LOADER_SECRET  = LOADER_SECRET;
+process.env.SESSION_SECRET = SESSION_SECRET;
+
 if (process.env.NODE_ENV === "production") {
   const ap = process.env.ADMIN_PASSWORD || "";
   if (!ap || ap === "admin123" || ap.startsWith("CHANGE_ME")) {
-    console.error("[FATAL] ADMIN_PASSWORD must be changed from default in production.");
+    console.error("[FATAL] ADMIN_PASSWORD must be changed from the default in production.");
     process.exit(1);
   }
 }
 
-// ─── DB path ──────────────────────────────────────────────────────────────────
+// ─── DB setup ─────────────────────────────────────────────────────────────────
 const DATA_DIR =
   process.env.RAILWAY_VOLUME_MOUNT_PATH ||
   process.env.DATA_DIR ||
@@ -42,15 +52,13 @@ function _markReady() {
   _readyQ.forEach((fn) => fn());
 }
 
-// ─── Schema + migrations ─────────────────────────────────────────────────────
-// Everything inside one db.serialize() call so statements run in strict order.
-// ALTER TABLE statements are safe to re-run — errors for duplicate columns are ignored.
+// ─── Schema + migrations (single serialize block — strict order) ──────────────
 db.serialize(() => {
   db.run("PRAGMA journal_mode = WAL");
-  db.run("PRAGMA foreign_keys = OFF"); // OFF during migrations to avoid FK errors
+  db.run("PRAGMA foreign_keys = OFF"); // off during migrations
   db.run("PRAGMA synchronous = NORMAL");
 
-  // ── Core tables ─────────────────────────────────────────────────────────────
+  // ── Core tables ──────────────────────────────────────────────────────────
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id         TEXT PRIMARY KEY,
     username   TEXT UNIQUE,
@@ -100,7 +108,8 @@ db.serialize(() => {
     license_id TEXT NOT NULL REFERENCES licenses(id) ON DELETE CASCADE,
     session_id TEXT NOT NULL,
     last_ping  INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-    ip         TEXT
+    ip         TEXT,
+    UNIQUE(license_id, session_id)
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS auth_logs (
@@ -124,8 +133,7 @@ db.serialize(() => {
     UNIQUE(provider, provider_id)
   )`);
 
-  // ── Migrations — add new columns to existing tables ──────────────────────
-  // Each one silently no-ops if the column already exists.
+  // ── Migrations — safe to re-run, duplicate column errors are ignored ──────
   const migrations = [
     "ALTER TABLE users ADD COLUMN email         TEXT",
     "ALTER TABLE users ADD COLUMN role          TEXT NOT NULL DEFAULT 'user'",
@@ -139,7 +147,6 @@ db.serialize(() => {
     "ALTER TABLE users ADD COLUMN api_key       TEXT",
     "ALTER TABLE projects ADD COLUMN obfuscate  INTEGER NOT NULL DEFAULT 1",
   ];
-
   for (const sql of migrations) {
     db.run(sql, (err) => {
       if (err && !err.message.includes("duplicate column")) {
@@ -148,7 +155,7 @@ db.serialize(() => {
     });
   }
 
-  // ── Indexes ──────────────────────────────────────────────────────────────
+  // ── Indexes ───────────────────────────────────────────────────────────────
   db.run("CREATE INDEX IF NOT EXISTS idx_lic_key      ON licenses(key_value)");
   db.run("CREATE INDEX IF NOT EXISTS idx_lic_project  ON licenses(project_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_lic_hwid     ON licenses(hwid)");
@@ -159,33 +166,24 @@ db.serialize(() => {
   db.run("CREATE INDEX IF NOT EXISTS idx_log_project  ON auth_logs(project_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_log_ip       ON auth_logs(ip)");
   db.run("CREATE INDEX IF NOT EXISTS idx_oauth_user   ON oauth_accounts(user_id)");
-  db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON users(email) WHERE email IS NOT NULL");
   db.run("CREATE INDEX IF NOT EXISTS idx_proj_user    ON projects(user_id)");
+  db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON users(email) WHERE email IS NOT NULL");
 
-  // ── Re-enable FK enforcement after migrations ────────────────────────────
   db.run("PRAGMA foreign_keys = ON");
 
-  // ── Backfill existing rows with new column values ────────────────────────
-  db.run(`UPDATE users SET
-    role     = 'admin',
-    verified = 1,
-    email    = COALESCE(email, 'admin@surfix.local')
-  WHERE username = 'admin' AND (role IS NULL OR role = '')`);
-
+  // ── Backfills ─────────────────────────────────────────────────────────────
   db.run("UPDATE projects SET obfuscate = 1 WHERE obfuscate IS NULL");
   db.run("UPDATE projects SET user_id = 'admin-1' WHERE user_id IS NULL");
 
-  // ── Seed admin user if missing ───────────────────────────────────────────
+  // ── Seed admin ────────────────────────────────────────────────────────────
   db.get("SELECT id FROM users WHERE username = 'admin'", (err, row) => {
     if (row) {
-      // Ensure existing admin has all required fields
-      const pass = process.env.ADMIN_PASSWORD || "admin123";
-      db.get("SELECT password FROM users WHERE username = 'admin'", (e, r) => {
-        if (r && !r.password) {
-          const hash = bcrypt.hashSync(pass, 12);
-          db.run("UPDATE users SET password = ?, role = 'admin', verified = 1, email = COALESCE(email,'admin@surfix.local') WHERE username = 'admin'", [hash]);
-        }
-      });
+      // Ensure existing admin has all required fields populated
+      db.run(`UPDATE users SET
+        role     = COALESCE(NULLIF(role,''), 'admin'),
+        verified = 1,
+        email    = COALESCE(NULLIF(email,''), 'admin@surfix.local')
+      WHERE username = 'admin'`);
       return _markReady();
     }
     const pass = process.env.ADMIN_PASSWORD || "admin123";
