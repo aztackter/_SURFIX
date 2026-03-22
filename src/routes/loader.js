@@ -138,35 +138,42 @@ _fn()`;
 }
 
 router.get("/loader/:projectId.lua", async (req, res) => {
-  console.log("Loader request from:", req.headers["user-agent"]);
   try {
     const { projectId } = req.params;
     if (!isValidProjectId(projectId)) {
-      console.log("Invalid project ID:", projectId);
       return res.status(400).type("text/plain").send("-- Invalid project ID");
     }
 
     const project = await db.get("SELECT id, name, version, ffa FROM projects WHERE id = ?", [projectId]);
-    if (!project) {
-      console.log("Project not found:", projectId);
-      return res.status(404).type("text/plain").send("-- Project not found");
-    }
+    if (!project) return res.status(404).type("text/plain").send("-- Project not found");
 
-    console.log("Project found:", project.name, "FFA:", project.ffa);
-    
     const ffa = project.ffa === 1;
     const accept = req.headers.accept || "";
     const userAgent = req.headers["user-agent"] || "";
     
-    const executorPatterns = /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor|LuaExecutor|Xeno|Solara|Aurora|Swift|Nova/i;
+    const executorPatterns = /Roblox|Delta|Synapse|Krnl|Fluxus|ScriptWare|Arceus|Coco|Electron|Sirius|Vega|Evon|Celery|JJSploit|Oxygen|Hydrogen|Cryptic|Script-Executor|Executor|LuaExecutor|Xeno|Solara|Aurora|Swift|Nova|RequestAsync|HttpService/i;
     const isExecutor = executorPatterns.test(userAgent);
     const isBrowser = accept.includes("text/html") && /Mozilla|Chrome|Safari|Firefox|Edg/i.test(userAgent) && !isExecutor;
-
-    console.log("isExecutor:", isExecutor, "isBrowser:", isBrowser);
 
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
+
+    if (!isBrowser) {
+      const cacheKey = `${project.id}:${project.version}:${HOST}`;
+      const cached = cacheGet(cacheKey);
+      if (cached) {
+        res.type("text/plain").send(cached);
+        return;
+      }
+
+      const rawLoader = buildRawLoader(project, ffa);
+      const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
+      const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
+      cacheSet(cacheKey, obfuscatedLoader);
+      res.type("text/plain").send(obfuscatedLoader);
+      return;
+    }
 
     const loaderUrl = `${HOST}/api/loader/${project.id}.lua`;
     const urlParts = [];
@@ -180,34 +187,13 @@ router.get("/loader/:projectId.lua", async (req, res) => {
       .replace(/__FFA_NOTE__/g, ffa ? "FFA Mode — No license key required" : 'script_key = "YOUR_KEY"; -- A key is required')
       .replace(/__PARTS__/g, partsJson);
 
-    if (isBrowser) {
-      console.log("Serving HTML to browser");
-      res.set({
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "Referrer-Policy": "no-referrer",
-        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'"
-      });
-      res.type("html").send(html);
-      return;
-    }
-
-    console.log("Serving Lua loader to executor");
-    const cacheKey = `${project.id}:${project.version}:${HOST}`;
-    const cached = cacheGet(cacheKey);
-    if (cached) {
-      console.log("Cache hit for:", cacheKey);
-      res.type("text/plain").send(cached);
-      return;
-    }
-
-    console.log("Cache miss, generating new loader for:", cacheKey);
-    const rawLoader = buildRawLoader(project, ffa);
-    const obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
-    const { code: obfuscatedLoader } = obfuscator.obfuscate(rawLoader);
-    cacheSet(cacheKey, obfuscatedLoader);
-    console.log("Loader generated, length:", obfuscatedLoader.length);
-    res.type("text/plain").send(obfuscatedLoader);
+    res.set({
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'"
+    });
+    res.type("html").send(html);
   } catch (err) {
     console.error("Loader error:", err);
     res.status(500).type("text/plain").send("-- Error: " + err.message);
