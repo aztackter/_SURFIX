@@ -18,7 +18,7 @@
 html{overflow-x:hidden;scroll-behavior:smooth;}
 body{
   background:var(--bg);color:var(--text);font-family:var(--F);
-  overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;cursor:default;-webkit-font-smoothing:antialiased;
 }
 
 /* ─── LOADER ─── */
@@ -38,19 +38,12 @@ body{
 @keyframes spin{to{transform:rotate(360deg);}}
 .load-logo{
   position:absolute;width:44px;height:44px;border-radius:14px;
-  background:linear-gradient(135deg,#7c3aed,#06b6d4);
+  background:linear-gradient(135deg, #7c3aed, #ec4899, #f472b6);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.load-logo img{width:28px;height:28px;object-fit:contain;filter:brightness(10);}
 .load-track{width:180px;height:2px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;}
-.load-fill{height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#22d3ee);border-radius:2px;transition:width .1s;}
+.load-fill{height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#ec4899);border-radius:2px;transition:width .1s;}
 .load-lbl{font-family:var(--M);font-size:0.65rem;letter-spacing:.2em;color:rgba(255,255,255,0.22);text-transform:uppercase;}
-
-/* ─── CURSOR ─── */
-#dot{position:fixed;width:7px;height:7px;border-radius:50%;background:var(--c2);pointer-events:none;z-index:99990;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:transform .15s,width .2s,height .2s,opacity .2s;}
-#ring{position:fixed;width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(34,211,238,0.5);pointer-events:none;z-index:99989;transform:translate(-50%,-50%);transition:width .45s cubic-bezier(.2,.9,.4,1.1),height .45s cubic-bezier(.2,.9,.4,1.1),background .3s,border-color .3s;}
-body.hov #dot{width:4px;height:4px;}
-body.hov #ring{width:52px;height:52px;background:rgba(34,211,238,0.04);border-color:rgba(34,211,238,0.8);}
 
 /* ─── NOISE ─── */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.026;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px;}
@@ -83,14 +76,11 @@ nav.stuck{background:rgba(1,1,12,.85);border-color:rgba(124,58,237,.12);backdrop
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
 .logo-mark{
   width:38px;height:38px;border-radius:13px;
-  background:linear-gradient(135deg,#7c3aed,#06b6d4);
-  display:flex;align-items:center;justify-content:center;overflow:hidden;
-  position:relative;transition:transform .35s,box-shadow .35s;flex-shrink:0;
+  background:linear-gradient(135deg, #7c3aed, #ec4899, #f472b6);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .35s,box-shadow .35s;flex-shrink:0;
 }
-.logo-mark img{width:24px;height:24px;object-fit:contain;filter:brightness(10);position:relative;z-index:1;}
-.logo-mark::after{content:'';position:absolute;inset:-5px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border-radius:18px;filter:blur(14px);opacity:0;transition:opacity .35s;}
-.logo:hover .logo-mark{transform:scale(1.1);box-shadow:0 0 30px rgba(124,58,237,.5);}
-.logo:hover .logo-mark::after{opacity:.65;}
+.logo:hover .logo-mark{transform:scale(1.1);box-shadow:0 0 30px rgba(236,72,153,.5);}
 .logo-name{font-size:1.2rem;font-weight:800;letter-spacing:.1em;}
 .nav-mid{display:flex;background:rgba(255,255,255,.034);border:1px solid rgba(255,255,255,.065);border-radius:100px;padding:4px;}
 .nav-mid a{color:rgba(255,255,255,.42);text-decoration:none;font-size:.79rem;font-weight:700;letter-spacing:.05em;padding:7px 17px;border-radius:100px;transition:all .2s;}
@@ -98,10 +88,8 @@ nav.stuck{background:rgba(1,1,12,.85);border-color:rgba(124,58,237,.12);backdrop
 .nav-r{display:flex;align-items:center;gap:11px;}
 .nav-disc{color:rgba(255,255,255,.38);text-decoration:none;font-size:.79rem;font-weight:700;letter-spacing:.04em;padding:8px 15px;border-radius:100px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:7px;transition:all .3s;}
 .nav-disc:hover{color:#fff;border-color:rgba(124,58,237,.5);background:rgba(124,58,237,.1);}
-.nav-cta{background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;color:#fff;font-family:var(--F);font-weight:800;font-size:.8rem;letter-spacing:.06em;padding:10px 22px;border-radius:100px;cursor:none;position:relative;overflow:hidden;transition:transform .25s,box-shadow .3s;}
-.nav-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#a855f7,#22d3ee);opacity:0;transition:opacity .3s;}
-.nav-cta:hover{transform:scale(1.06);box-shadow:0 0 36px rgba(124,58,237,.55);}
-.nav-cta:hover::before{opacity:1;}
+.nav-cta{background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;color:#fff;font-family:var(--F);font-weight:800;font-size:.8rem;letter-spacing:.06em;padding:10px 22px;border-radius:100px;cursor:pointer;transition:transform .25s,box-shadow .3s;}
+.nav-cta:hover{transform:scale(1.06);box-shadow:0 0 36px rgba(236,72,153,.55);}
 .nav-cta span{position:relative;z-index:1;}
 
 /* ─── HERO ─── */
@@ -139,13 +127,10 @@ nav.stuck{background:rgba(1,1,12,.85);border-color:rgba(124,58,237,.12);backdrop
 .hero-btns{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fup 1s cubic-bezier(.2,.9,.4,1.1) 1.1s forwards;}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:9px;padding:15px 34px;border-radius:100px;font-family:var(--F);font-weight:800;font-size:.92rem;letter-spacing:.025em;cursor:none;border:none;position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.2,.9,.4,1.1),box-shadow .3s;}
-.btn-p{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;}
-.btn-p::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#a855f7,#22d3ee);opacity:0;transition:opacity .3s;}
-.btn-p:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 0 52px rgba(124,58,237,.55),0 18px 44px -10px rgba(0,0,0,.6);}
-.btn-p:hover::before{opacity:1;}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:15px 34px;border-radius:100px;font-family:var(--F);font-weight:800;font-size:.92rem;letter-spacing:.025em;cursor:pointer;border:none;transition:transform .25s cubic-bezier(.2,.9,.4,1.1),box-shadow .3s;}
+.btn-p{background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;}
+.btn-p:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 0 52px rgba(236,72,153,.55),0 18px 44px -10px rgba(0,0,0,.6);}
 .btn-p:active{transform:scale(.97);}
-.btn span{position:relative;z-index:1;}
 .btn-g{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.62);backdrop-filter:blur(8px);transition:all .3s;}
 .btn-g:hover{border-color:rgba(124,58,237,.5);color:#fff;background:rgba(124,58,237,.09);transform:translateY(-4px);}
 
@@ -265,8 +250,7 @@ nav.stuck{background:rgba(1,1,12,.85);border-color:rgba(124,58,237,.12);backdrop
 /* ─── FOOTER ─── */
 footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
 .fl{display:flex;align-items:center;gap:9px;font-family:var(--M);font-size:.68rem;color:rgba(255,255,255,.2);}
-.flm{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.flm img{width:15px;height:15px;object-fit:contain;filter:brightness(10);}
+.flm{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#7c3aed,#ec4899,#f472b6);display:flex;align-items:center;justify-content:center;}
 .fr{display:flex;gap:18px;}
 .fr a{color:rgba(255,255,255,.22);text-decoration:none;font-size:.77rem;transition:color .2s;}
 .fr a:hover{color:var(--v3);}
@@ -282,20 +266,20 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 .modal.vis{opacity:1;}
 .mbox{background:rgba(5,5,20,.97);border:1px solid rgba(124,58,237,.22);border-radius:26px;padding:38px;max-width:420px;width:92%;position:relative;transform:scale(.93) translateY(18px);transition:transform .4s cubic-bezier(.2,.9,.4,1.1);}
 .modal.vis .mbox{transform:scale(1) translateY(0);}
-.mclose{position:absolute;top:15px;right:18px;background:none;border:none;color:rgba(255,255,255,.24);font-size:1.45rem;cursor:none;line-height:1;transition:color .2s;}
+.mclose{position:absolute;top:15px;right:18px;background:none;border:none;color:rgba(255,255,255,.24);font-size:1.45rem;cursor:pointer;line-height:1;transition:color .2s;}
 .mclose:hover{color:#fff;}
 .mh{font-size:1.5rem;font-weight:800;letter-spacing:-.025em;background:linear-gradient(135deg,#c084fc,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:22px;}
 .mf{width:100%;padding:13px 16px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:#fff;font-family:var(--F);font-size:.92rem;outline:none;margin-bottom:11px;transition:border-color .2s;}
 .mf:focus{border-color:rgba(124,58,237,.55);}
-.mbtn{width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;border-radius:13px;color:#fff;font-family:var(--F);font-weight:800;font-size:.95rem;cursor:none;letter-spacing:.03em;transition:opacity .2s,transform .2s;}
+.mbtn{width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;border-radius:13px;color:#fff;font-family:var(--F);font-weight:800;font-size:.95rem;cursor:pointer;letter-spacing:.03em;transition:opacity .2s,transform .2s;}
 .mbtn:hover{opacity:.9;transform:scale(1.01);}
 .merr{color:#f87171;text-align:center;margin-top:9px;font-size:.82rem;min-height:18px;}
 .tos-h{color:var(--v3);margin:13px 0 4px;font-size:.93rem;}
 .tos-p{color:rgba(255,255,255,.44);font-size:.83rem;line-height:1.62;}
 .cf{width:100%;padding:12px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:#86efac;font-family:var(--M);font-size:.77rem;resize:vertical;outline:none;margin-bottom:11px;}
-.sf{width:100%;padding:11px 15px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:var(--v3);font-family:var(--F);font-size:.86rem;margin-bottom:11px;outline:none;cursor:none;}
+.sf{width:100%;padding:11px 15px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:var(--v3);font-family:var(--F);font-size:.86rem;margin-bottom:11px;outline:none;cursor:pointer;}
 .crow{display:flex;gap:18px;margin-bottom:18px;}
-.crow label{display:flex;align-items:center;gap:7px;font-size:.82rem;color:rgba(255,255,255,.38);cursor:none;}
+.crow label{display:flex;align-items:center;gap:7px;font-size:.82rem;color:rgba(255,255,255,.38);cursor:pointer;}
 
 @media(max-width:768px){
   nav{padding:0 1.2rem;} .hero{padding:100px 1.2rem 80px;}
@@ -315,16 +299,15 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   <div style="position:relative;width:76px;height:76px;">
     <div class="load-ring"></div>
     <div class="load-logo" style="position:absolute;inset:0;margin:auto;width:44px;height:44px;">
-      <img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" alt="S">
+      <!-- logo is just the gradient square – no image needed -->
     </div>
   </div>
   <div class="load-track"><div class="load-fill" id="lf"></div></div>
   <div class="load-lbl" id="ll">Initializing…</div>
 </div>
 
-<!-- CURSOR -->
-<div id="dot"></div>
-<div id="ring"></div>
+<!-- CURSOR (simple dot only, no magnetic tracking) -->
+<div id="dot" style="position:fixed; width:6px; height:6px; border-radius:50%; background:#22d3ee; pointer-events:none; z-index:99990; transform:translate(-50%,-50%); mix-blend-mode:screen; transition:transform .15s;"></div>
 
 <!-- BG -->
 <canvas id="bg"></canvas>
@@ -334,7 +317,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 <!-- NAV -->
 <nav id="nav">
   <a href="#" class="logo">
-    <div class="logo-mark"><img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" alt="SURFIX"></div>
+    <div class="logo-mark"></div>
     <span class="logo-name">SURFIX</span>
   </a>
   <div class="nav-mid">
@@ -365,8 +348,8 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   </h1>
   <p class="hero-sub">Seven interlocked protection layers, a custom VM with randomized opcodes, HWID locking and license management — the complete arsenal for enterprise Lua security.</p>
   <div class="hero-btns">
-    <button class="btn btn-p jobf mag"><span>⚡ Obfuscate Now</span></button>
-    <button class="btn btn-g jlogin mag"><span>🔑 Admin Login</span></button>
+    <button class="btn btn-p jobf"><span>⚡ Obfuscate Now</span></button>
+    <button class="btn btn-g jlogin"><span>🔑 Admin Login</span></button>
   </div>
   <div class="scue"><div class="sline"></div><span>Scroll</span></div>
 </section>
@@ -402,7 +385,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
     <!-- layer stack -->
     <div class="bc s3 rev rd1">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-        <div class="bic bv">🔒</div>
+        <div class="bic bv">🛡️</div>
         <div><h3>7-Layer Defense</h3><p style="font-size:.77rem;">Strip one, hit six more</p></div>
       </div>
       <div class="ls">
@@ -489,8 +472,8 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
     <h2 style="font-size:clamp(2.2rem,4.5vw,3.6rem);font-weight:800;letter-spacing:-.035em;line-height:1.04;margin-bottom:14px;">Make Your Scripts<br><span class="gt">Unbreakable Today.</span></h2>
     <p style="color:var(--muted);font-size:1rem;max-width:420px;margin:0 auto 38px;line-height:1.7;">Join developers who trust SURFIX to protect their most valuable Lua scripts.</p>
     <div style="display:flex;gap:13px;justify-content:center;flex-wrap:wrap;">
-      <button class="btn btn-p jobf mag"><span>⚡ Obfuscate Free</span></button>
-      <a href="https://discord.gg/hq5t5XCZw" class="btn btn-g mag" target="_blank"><span>Join Discord</span></a>
+      <button class="btn btn-p jobf"><span>⚡ Obfuscate Free</span></button>
+      <a href="https://discord.gg/hq5t5XCZw" class="btn btn-g" target="_blank"><span>Join Discord</span></a>
     </div>
   </div>
 </section>
@@ -498,7 +481,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 <!-- FOOTER -->
 <footer>
   <div class="fl">
-    <div class="flm"><img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" alt="S"></div>
+    <div class="flm"></div>
     © 2024–2025 SURFIX · Made with ❤ by <strong style="color:var(--v3);margin-left:3px;">XZX HUB</strong>
   </div>
   <div class="fr">
@@ -513,9 +496,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   <div class="mbox">
     <button class="mclose" data-m="mLogin">×</button>
     <div style="text-align:center;margin-bottom:22px;">
-      <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#06b6d4);margin:0 auto 11px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-        <img src="https://i.ibb.co/V5cmWhn/47-B3-C155-3322-44-F1-BD7-B-3-D6446-CF7-A1-F.png" style="width:32px;height:32px;object-fit:contain;filter:brightness(10);">
-      </div>
+      <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#ec4899);margin:0 auto 11px;display:flex;align-items:center;justify-content:center;"></div>
       <div class="mh" style="margin-bottom:0;">Admin Access</div>
     </div>
     <input class="mf" id="lu" type="text" placeholder="Username" value="admin">
@@ -574,7 +555,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 </div>
 
 <script>
-// ══ LOADER ══
+// LOADER
 const MSGS=['Initializing engine…','Loading 7 protection layers…','Warming variant cache…','Ready.'];
 let pct=0; const lf=document.getElementById('lf'),ll=document.getElementById('ll');
 const li=setInterval(()=>{
@@ -590,24 +571,14 @@ const li=setInterval(()=>{
   }
 },80);
 
-// ══ CURSOR ══
-const dot=document.getElementById('dot'),ring=document.getElementById('ring');
-let mx=0,my=0,rx=0,ry=0;
+// SIMPLE CURSOR (no magnetic)
+const dot=document.getElementById('dot');
+let mx=0,my=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
-(function a(){rx+=(mx-rx)*.11;ry+=(my-ry)*.11;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a);})();
-document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.bc,.lb,.st,.mag'))document.body.classList.add('hov');});
-document.addEventListener('mouseout',e=>{if(e.target.closest('a,button,.bc,.lb,.st,.mag'))document.body.classList.remove('hov');});
+document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.bc,.lb,.st'))dot.style.transform='scale(1.8)';});
+document.addEventListener('mouseout',e=>{if(e.target.closest('a,button,.bc,.lb,.st'))dot.style.transform='scale(1)';});
 
-// ══ MAGNETIC ══
-document.querySelectorAll('.mag').forEach(el=>{
-  el.addEventListener('mousemove',e=>{
-    const r=el.getBoundingClientRect();
-    el.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.28}px,${(e.clientY-r.top-r.height/2)*.28}px)`;
-  });
-  el.addEventListener('mouseleave',()=>el.style.transform='');
-});
-
-// ══ CANVAS BG: nebula + constellation ══
+// CANVAS BG
 const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');
 let BW,BH,stars=[];
 function resB(){BW=bgC.width=innerWidth;BH=bgC.height=innerHeight;makeStars();}
@@ -618,35 +589,31 @@ function makeStars(){
 resB();window.addEventListener('resize',resB);
 let bmx=BW/2,bmy=BH/2;
 document.addEventListener('mousemove',e=>{bmx=e.clientX;bmy=e.clientY;});
-let bf=0;
-(function drawBg(){
+function drawBg(){
   bgX.clearRect(0,0,BW,BH);
-  // nebula
   [[.14,.18,520,'rgba(124,58,237,',0.13],[.88,.77,580,'rgba(6,182,212,',0.09],[.5,.46,320,'rgba(236,72,153,',0.055]].forEach(([xx,yy,rr,col,aa])=>{
     const g=bgX.createRadialGradient(xx*BW,yy*BH,0,xx*BW,yy*BH,rr);
     g.addColorStop(0,col+aa+')');g.addColorStop(1,col+'0)');
     bgX.fillStyle=g;bgX.fillRect(0,0,BW,BH);
   });
-  // stars
   stars.forEach(s=>{
     s.x+=s.vx;s.y+=s.vy;if(s.x<0)s.x=BW;if(s.x>BW)s.x=0;if(s.y<0)s.y=BH;if(s.y>BH)s.y=0;
     s.ph+=.013;
     bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);
     bgX.fillStyle=`rgba(210,200,255,${s.a+Math.sin(s.ph)*.12})`;bgX.fill();
   });
-  // connections
   for(let i=0;i<stars.length;i++) for(let j=i+1;j<stars.length;j++){
     const dx=stars[i].x-stars[j].x,dy=stars[i].y-stars[j].y,d=Math.sqrt(dx*dx+dy*dy);
     if(d<155){bgX.beginPath();bgX.moveTo(stars[i].x,stars[i].y);bgX.lineTo(stars[j].x,stars[j].y);bgX.strokeStyle=`rgba(124,58,237,${(1-d/155)*.07})`;bgX.lineWidth=.5;bgX.stroke();}
   }
-  // mouse glow
   const g2=bgX.createRadialGradient(bmx,bmy,0,bmx,bmy,280);
   g2.addColorStop(0,'rgba(124,58,237,0.06)');g2.addColorStop(1,'rgba(124,58,237,0)');
   bgX.fillStyle=g2;bgX.fillRect(0,0,BW,BH);
   requestAnimationFrame(drawBg);
-})();
+}
+drawBg();
 
-// ══ FLOATING PARTICLES ══
+// PARTICLES
 const pc=document.getElementById('particles'),px=pc.getContext('2d');
 let PW,PH,parts=[];
 function resP(){PW=pc.width=innerWidth;PH=pc.height=innerHeight;}
@@ -654,7 +621,7 @@ resP();window.addEventListener('resize',resP);
 const CHARS=['0x','⊕','VM','XOR','{}','fn','if','&&','←','≡','//','◆'];
 const COLS=['rgba(124,58,237,','rgba(6,182,212,','rgba(168,85,247,','rgba(236,72,153,'];
 let pf=0;
-(function drawP(){
+function drawP(){
   px.clearRect(0,0,PW,PH);pf++;
   if(pf%22===0&&parts.length<60) parts.push({x:Math.random()*PW,y:PH+8,dx:(Math.random()-.5)*.4,dy:-(0.18+Math.random()*.45),ch:CHARS[Math.floor(Math.random()*CHARS.length)],col:COLS[Math.floor(Math.random()*COLS.length)],a:0,ma:.08+Math.random()*.18,sz:7+Math.random()*5,life:0,ml:200+Math.random()*200});
   parts=parts.filter(p=>p.life<p.ml);
@@ -665,28 +632,26 @@ let pf=0;
     px.fillStyle=p.col+p.a+')';px.fillText(p.ch,p.x,p.y);
   });
   requestAnimationFrame(drawP);
-})();
+}
+drawP();
 
-// ══ NAV ══
+// NAV SCROLL
 window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('stuck',scrollY>40));
 
-// ══ CARD GLOW ══
+// CARD GLOW
 document.querySelectorAll('.bc').forEach(c=>{
   c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');c.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});
 });
 
-// ══ TERMINAL ══
+// TERMINAL
 const TL=[
-  {t:'cmd'},
-  {t:'div'},
-  {t:'info',x:'│  Source: 2.4 KB · 147 tokens · Lua 5.4'},
+  {t:'cmd'},{t:'div'},{t:'info',x:'│  Source: 2.4 KB · 147 tokens · Lua 5.4'},
   {t:'ok',x:'│  ✓ AES-256-GCM string encryption',n:'31 strings encrypted'},
   {t:'ok',x:'│  ✓ Control flow flattening',n:'23 transforms applied'},
   {t:'ok',x:'│  ✓ VM bytecode generation',n:'seed 0x4f8a · unique opcodes'},
   {t:'ok',x:'│  ✓ Anti-tamper + Anti-debug'},
   {t:'ok',x:'│  ✓ Variant cache warmed',n:'8 variants · 20–80× faster'},
-  {t:'div'},
-  {t:'done',x:'✔  Protected · 18.7 KB · delivery ~12ms'},
+  {t:'div'},{t:'done',x:'✔  Protected · 18.7 KB · delivery ~12ms'},
 ];
 const tb=document.getElementById('tb');let ti=0;
 function tnext(){
@@ -700,14 +665,13 @@ function tnext(){
   tb.appendChild(d);requestAnimationFrame(()=>d.classList.add('in'));
   if(ti<TL.length) setTimeout(tnext,l.t==='cmd'?0:l.t==='div'?70:140);
 }
-// terminal 3d tilt
 const t3=document.getElementById('t3');
 document.addEventListener('mousemove',e=>{
   const cx=innerWidth/2,cy=innerHeight*.38;
   t3.style.transform=`rotateX(${((e.clientY-cy)/cy)*-5}deg) rotateY(${((e.clientX-cx)/cx)*3.5}deg)`;
 });
 
-// ══ INTERSECTION OBSERVERS ══
+// INTERSECTION
 const io=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
     if(!e.isIntersecting)return;
@@ -717,13 +681,12 @@ const io=new IntersectionObserver(entries=>{
   });
 },{threshold:.12});
 document.querySelectorAll('.rev').forEach(e=>io.observe(e));
-
 const t3io=new IntersectionObserver(entries=>{
   entries.forEach(e=>{if(e.isIntersecting){t3.classList.add('vis');setTimeout(tnext,500);}});
 },{threshold:.18});
 t3io.observe(t3);
 
-// ══ OPCODES ══
+// OPCODES
 [['LOAD_K',85,'0x4F8A','linear-gradient(90deg,#7c3aed,#c084fc)'],['SETGLOB',62,'0x7C12','linear-gradient(90deg,#06b6d4,#22d3ee)'],['GETUPVAL',44,'0x3E09','linear-gradient(90deg,#ec4899,#f472b6)'],['CALL',91,'0x81AF','linear-gradient(90deg,#10b981,#34d399)'],['RETURN',33,'0x55D3','linear-gradient(90deg,#f59e0b,#fbbf24)'],['JMP',70,'0xD2B1','linear-gradient(90deg,#7c3aed,#06b6d4)']].forEach(([n,p,h,g])=>{
   const r=document.createElement('div');r.className='or';
   r.innerHTML=`<span class="ol">${n}</span><div class="ot2"><div class="ob" style="background:${g}" data-p="${p}"></div></div><span class="oh">${h}</span>`;
@@ -734,7 +697,7 @@ setInterval(()=>{
   el.style.opacity='0';setTimeout(()=>{el.textContent=Math.floor(Math.random()*0xFFFF).toString(16).padStart(4,'0');el.style.transition='opacity .4s';el.style.opacity='1';},200);
 },3200);
 
-// ══ COUNTERS ══
+// COUNTERS
 const cio=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
     if(!e.isIntersecting)return;
@@ -747,7 +710,7 @@ const cio=new IntersectionObserver(entries=>{
 },{threshold:.5});
 document.querySelectorAll('.stats').forEach(e=>cio.observe(e));
 
-// ══ MODALS ══
+// MODALS
 function openM(id){const m=document.getElementById(id);m.classList.add('open');requestAnimationFrame(()=>m.classList.add('vis'));}
 function closeM(id){const m=document.getElementById(id);m.classList.remove('vis');setTimeout(()=>m.classList.remove('open'),300);}
 document.querySelectorAll('.jlogin').forEach(e=>e.addEventListener('click',()=>openM('mLogin')));
@@ -757,16 +720,20 @@ document.querySelectorAll('.jprivacy').forEach(e=>e.addEventListener('click',ev=
 document.querySelectorAll('.mclose').forEach(e=>e.addEventListener('click',()=>closeM(e.dataset.m)));
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);}));
 
-// ══ LOGIN ══
+// LOGIN
 let tok=localStorage.getItem('surfix_token')||'';
 document.getElementById('lbtn').addEventListener('click',async()=>{
   const u=document.getElementById('lu').value,p=document.getElementById('lp').value;
   document.getElementById('lerr').textContent='';
-  try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});const d=await r.json();if(d.token){tok=d.token;localStorage.setItem('surfix_token',tok);closeM('mLogin');location.href='/dashboard';}else document.getElementById('lerr').textContent=d.error||'Login failed';}
-  catch(err){document.getElementById('lerr').textContent=err.message;}
+  try{
+    const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(d.token){tok=d.token;localStorage.setItem('surfix_token',tok);closeM('mLogin');location.href='/dashboard';}
+    else document.getElementById('lerr').textContent=d.error||'Login failed';
+  }catch(err){document.getElementById('lerr').textContent=err.message;}
 });
 
-// ══ OBFUSCATE ══
+// OBFUSCATE
 async function doObf(){
   const script=document.getElementById('sc').value.trim();
   if(!script){alert('Paste a Lua script first');return;}
@@ -775,13 +742,19 @@ async function doObf(){
   btn.textContent='⏳ Obfuscating…';btn.disabled=true;res.innerHTML='';
   try{
     const r=await fetch('/api/admin/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'temp_'+Date.now(),script,version:'1.0.0',protection_level:lvl,lightning:li2,silent:si})});
+    if(!r.ok){
+      const err=await r.text();
+      throw new Error(`Server error: ${r.status} - ${err.slice(0,100)}`);
+    }
     const proj=await r.json();
     const lr=await fetch(`/api/loader/${proj.id}.lua`);
+    if(!lr.ok) throw new Error(`Loader fetch failed: ${lr.status}`);
     const code=await lr.text();
     res.innerHTML=`<div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:13px;padding:15px;"><p style="color:#34d399;font-weight:700;margin-bottom:9px;">✔ Protected · ${lvl.toUpperCase()}</p><textarea rows="4" readonly style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.05);border-radius:9px;padding:9px;color:#64748b;font-family:var(--M);font-size:.72rem;">${code}</textarea><button onclick="navigator.clipboard.writeText(this.previousSibling.value).then(()=>alert('Copied!'))" style="width:100%;margin-top:9px;padding:9px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);border-radius:9px;color:#22d3ee;font-family:var(--F);cursor:pointer;font-weight:700;font-size:.83rem;">Copy to Clipboard</button></div>`;
     await fetch(`/api/admin/projects/${proj.id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+tok}});
-  }catch(err){res.innerHTML=`<p style="color:#f87171;margin-top:9px;font-size:.83rem;">Error: ${err.message}</p>`;}
-  finally{btn.textContent='🚀 Obfuscate';btn.disabled=false;}
+  }catch(err){
+    res.innerHTML=`<p style="color:#f87171;margin-top:9px;font-size:.83rem;">Error: ${err.message}</p><p style="color:rgba(255,255,255,.3);font-size:.75rem;margin-top:8px;">If this persists, ensure the backend server is running and the API routes are properly deployed.</p>`;
+  }finally{btn.textContent='🚀 Obfuscate';btn.disabled=false;}
 }
 </script>
 </body>
