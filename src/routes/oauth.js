@@ -15,10 +15,6 @@ function issueAndRedirect(req, res, user) {
   res.redirect(`/oauth-success?token=${encodeURIComponent(token)}`);
 }
 
-function failRedirect(res, msg) {
-  res.redirect(`/?auth_error=${encodeURIComponent(msg || "OAuth failed")}`);
-}
-
 // ─── Google ───────────────────────────────────────────────────────────────────
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 router.get("/google/callback",
@@ -30,13 +26,6 @@ router.get("/google/callback",
 router.get("/github", passport.authenticate("github", { scope: ["user:email"] }));
 router.get("/github/callback",
   passport.authenticate("github", { session: false, failureRedirect: "/?auth_error=github_failed" }),
-  (req, res) => issueAndRedirect(req, res, req.user)
-);
-
-// ─── Facebook ─────────────────────────────────────────────────────────────────
-router.get("/facebook", passport.authenticate("facebook", { scope: ["email"] }));
-router.get("/facebook/callback",
-  passport.authenticate("facebook", { session: false, failureRedirect: "/?auth_error=facebook_failed" }),
   (req, res) => issueAndRedirect(req, res, req.user)
 );
 
