@@ -1,40 +1,28 @@
-const router = require(“express”).Router();
-const db     = require(”../database”);
+var router = require(“express”).Router();
+var db = require(”../database”);
 
-router.post(
-“/heartbeat”,
-(req, res, next) => req.app.locals.limiters.heartbeatLimiter(req, res, next),
-async (req, res) => {
-const { key, project, session_id } = req.body || {};
-if (!key || !project || !session_id) {
-return res.status(400).json({ error: “Missing fields” });
-}
+router.post(”/heartbeat”,
+function(req, res, next) { req.app.locals.limiters.heartbeatLimiter(req, res, next); },
+async function(req, res) {
+var body = req.body || {};
+var key = body.key;
+var project = body.project;
+var session_id = body.session_id;
+if (!key || !project || !session_id) return res.status(400).json({ error: “Missing fields” });
 
 ```
 try {
-  const license = await db.get(
-    "SELECT id FROM licenses WHERE key_value = ? AND project_id = ?",
-    [key, project]
-  );
+  var license = await db.get("SELECT id FROM licenses WHERE key_value = ? AND project_id = ?", [key, project]);
   if (!license) return res.status(403).json({ error: "Invalid license" });
 
-  // FIXED SEC-15: verify session_id belongs to THIS license, not just any license
-  const session = await db.get(
-    "SELECT * FROM active_sessions WHERE license_id = ? AND session_id = ?",
-    [license.id, session_id]
-  );
+  var session = await db.get("SELECT * FROM active_sessions WHERE license_id = ? AND session_id = ?", [license.id, session_id]);
   if (!session) return res.status(404).json({ error: "Session not found - re-authenticate" });
 
-  await db.run(
-    "UPDATE active_sessions SET last_ping = strftime('%s','now') WHERE id = ?",
-    [session.id]
-  );
+  await db.run("UPDATE active_sessions SET last_ping = strftime('%s','now') WHERE id = ?", [session.id]);
 
-  // Check concurrent session limit
-  const proj = await db.get("SELECT heartbeat FROM projects WHERE id = ?", [project]);
+  var proj = await db.get("SELECT heartbeat FROM projects WHERE id = ?", [project]);
   if (proj && proj.heartbeat > 0) {
-    // FIXED BUG-12: Use the same 120s window for both count and cleanup
-    const active = await db.get(
+    var active = await db.get(
       "SELECT COUNT(*) as c FROM active_sessions WHERE license_id = ? AND last_ping > strftime('%s','now') - 120",
       [license.id]
     );
@@ -43,17 +31,13 @@ try {
     }
   }
 
-  // FIXED BUG-11: Stale session cleanup uses indexed last_ping column
-  // Runs less frequently (every ~10 heartbeats) to reduce DB load
   if (Math.random() < 0.1) {
-    await db.run(
-      "DELETE FROM active_sessions WHERE last_ping < strftime('%s','now') - 120"
-    );
+    await db.run("DELETE FROM active_sessions WHERE last_ping < strftime('%s','now') - 120");
   }
 
   res.json({ action: "continue" });
 } catch (err) {
-  console.error("[HEARTBEAT]", err);
+  console.error("[HEARTBEAT]", err.message);
   res.status(500).json({ error: err.message });
 }
 ```
@@ -61,21 +45,16 @@ try {
 }
 );
 
-router.post(”/heartbeat/end”, async (req, res) => {
-const { key, project, session_id } = req.body || {};
-if (!key || !project || !session_id) {
-return res.status(400).json({ error: “Missing fields” });
-}
+router.post(”/heartbeat/end”, async function(req, res) {
+var body = req.body || {};
+var key = body.key;
+var project = body.project;
+var session_id = body.session_id;
+if (!key || !project || !session_id) return res.status(400).json({ error: “Missing fields” });
 try {
-const license = await db.get(
-“SELECT id FROM licenses WHERE key_value = ? AND project_id = ?”,
-[key, project]
-);
+var license = await db.get(“SELECT id FROM licenses WHERE key_value = ? AND project_id = ?”, [key, project]);
 if (!license) return res.status(403).json({ error: “Invalid license” });
-await db.run(
-“DELETE FROM active_sessions WHERE license_id = ? AND session_id = ?”,
-[license.id, session_id]
-);
+await db.run(“DELETE FROM active_sessions WHERE license_id = ? AND session_id = ?”, [license.id, session_id]);
 res.json({ success: true });
 } catch (err) {
 res.status(500).json({ error: err.message });
