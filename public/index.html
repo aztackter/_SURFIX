@@ -774,6 +774,7 @@ document.getElementById('login-submit')?.addEventListener('click',async function
       userToken=data.token;
       await checkAuth();
       closeM('mAuth');
+      window.location.href = '/user-dashboard';
     }else{
       errDiv.textContent=data.error||'Login failed';
     }
@@ -798,6 +799,7 @@ document.getElementById('signup-submit')?.addEventListener('click',async functio
       userToken=data.token;
       await checkAuth();
       closeM('mAuth');
+      window.location.href = '/user-dashboard';
     }else{
       errDiv.textContent=data.error||'Signup failed';
     }
