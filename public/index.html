@@ -472,16 +472,16 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
     </div>
     
     <div id="login-form">
-      <input class="mf" id="login-email" type="email" placeholder="Email">
+      <input class="mf" id="login-username" type="text" placeholder="Username">
       <input class="mf" id="login-password" type="password" placeholder="Password">
       <div class="forgot-link"><a href="#" id="forgot-link">Forgot password?</a></div>
       <button class="mbtn" id="login-submit">Sign In</button>
     </div>
     
     <div id="signup-form" style="display:none;">
-      <input class="mf" id="signup-username" type="text" placeholder="Username">
-      <input class="mf" id="signup-email" type="email" placeholder="Email">
-      <input class="mf" id="signup-password" type="password" placeholder="Password (min 8 chars)">
+      <input class="mf" id="signup-username" type="text" placeholder="Username (3-32 chars)">
+      <input class="mf" id="signup-password" type="password" placeholder="Password (min 6 chars)">
+      <input class="mf" id="signup-email" type="email" placeholder="Email (optional)">
       <button class="mbtn" id="signup-submit">Create Account</button>
     </div>
     
@@ -547,7 +547,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
     <button class="mclose" data-m="mTos">×</button>
     <div class="mh">Terms of Service</div>
-    <p style="color:rgba(255,255,255,.26);font-family:var(--M);font-size:.65rem;margin-bottom:14px;">Last Updated: March 22, 2025</p>
+    <p style="color:rgba(255,255,255,.26);font-family:var(--M);font-size:.65rem;margin-bottom:14px;">Last Updated: March 23, 2025</p>
     <h3 class="tos-h">1. Acceptance</h3><p class="tos-p">By accessing SURFIX you agree to these Terms.</p>
     <h3 class="tos-h">2. Permitted Use</h3><p class="tos-p">SURFIX provides Lua obfuscation and license management for legitimate protection only.</p>
     <h3 class="tos-h">3. Prohibited Use</h3><p class="tos-p">You may not use SURFIX to protect malware, viruses, or harmful software.</p>
@@ -762,12 +762,12 @@ function logout(){
 document.getElementById('logout-btn')?.addEventListener('click',logout);
 
 document.getElementById('login-submit')?.addEventListener('click',async function(){
-  var email=document.getElementById('login-email').value;
-  var password=document.getElementById('login-password').value;
-  var errDiv=document.getElementById('auth-error');
+  var username = document.getElementById('login-username').value;
+  var password = document.getElementById('login-password').value;
+  var errDiv = document.getElementById('auth-error');
   errDiv.textContent='';
   try{
-    var res=await fetch('/api/user/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
+    var res=await fetch('/api/user/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password})});
     var data=await res.json();
     if(data.token){
       localStorage.setItem('sf_token',data.token);
@@ -781,21 +781,23 @@ document.getElementById('login-submit')?.addEventListener('click',async function
 });
 
 document.getElementById('signup-submit')?.addEventListener('click',async function(){
-  var username=document.getElementById('signup-username').value;
-  var email=document.getElementById('signup-email').value;
-  var password=document.getElementById('signup-password').value;
-  var errDiv=document.getElementById('auth-error');
-  var successDiv=document.getElementById('auth-success');
+  var username = document.getElementById('signup-username').value;
+  var password = document.getElementById('signup-password').value;
+  var email = document.getElementById('signup-email').value;
+  var errDiv = document.getElementById('auth-error');
+  var successDiv = document.getElementById('auth-success');
   errDiv.textContent='';
   successDiv.style.display='none';
-  if(password.length<8){errDiv.textContent='Password must be at least 8 characters';return;}
+  if(password.length<6){errDiv.textContent='Password must be at least 6 characters';return;}
+  if(username.length<3){errDiv.textContent='Username must be at least 3 characters';return;}
   try{
-    var res=await fetch('/api/user/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,email:email,password:password})});
+    var res=await fetch('/api/user/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password,email:email})});
     var data=await res.json();
-    if(data.success){
-      successDiv.textContent='Account created! Check your email to verify.';
-      successDiv.style.display='block';
-      setTimeout(function(){closeM('mAuth');},3000);
+    if(data.token){
+      localStorage.setItem('sf_token',data.token);
+      userToken=data.token;
+      await checkAuth();
+      closeM('mAuth');
     }else{
       errDiv.textContent=data.error||'Signup failed';
     }
