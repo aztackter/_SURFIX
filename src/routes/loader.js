@@ -173,30 +173,4 @@ router.get("/loader/:projectId.lua", function(req, res) {
     });
 });
 
-var onReady = require("../database").onReady;
-
-if (onReady && typeof onReady === "function") {
-  onReady(function() {
-    db.all("SELECT id, name, version, ffa FROM projects")
-      .then(function(projects) {
-        var HOST = getHost();
-        projects.forEach(function(proj) {
-          var cacheKey = proj.id + ":" + proj.version + ":" + HOST;
-          if (!loaderCache.has(cacheKey)) {
-            var rawLoader = buildRawLoader(proj, proj.ffa === 1, HOST);
-            var obfuscator = new SurfixObfuscator({ level: "light", lightning: false, silent: false });
-            var result = obfuscator.obfuscate(rawLoader);
-            cacheSet(cacheKey, result.code);
-          }
-        });
-        console.log("[SURFIX] Cache warmed (" + projects.length + " projects)");
-      })
-      .catch(function(err) {
-        console.error("[LOADER] warmCache error:", err.message);
-      });
-  });
-} else {
-  console.error("[LOADER] onReady is not available, cache warming skipped");
-}
-
 module.exports = router;
