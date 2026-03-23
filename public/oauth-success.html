@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -31,43 +30,56 @@
 </style>
 </head>
 <body>
-<div class="ring" id="ring"></div>
+<div class="ring"></div>
 <p id="msg">Signing you in…</p>
 
 <script>
-(async function () {
-  try {
-    // Exchange the httpOnly cookie for the JWT token
-    const r = await fetch('/auth/oauth-token', {
-      credentials: 'include' // needed to send the httpOnly cookie
-    });
-    const data = await r.json();
+(function () {
+  var urlParams = new URLSearchParams(window.location.search);
+  var token = urlParams.get('token');
+  var error = urlParams.get('auth_error');
 
-    if (data.token) {
-      localStorage.setItem('sf_token', data.token);
-      window.location.replace('/');
-    } else {
-      showError(data.error || 'Sign-in failed. Please try again.');
-    }
-  } catch (err) {
-    showError('Network error. Please try again.');
+  if (error) {
+    showError(error === 'google_failed' ? 'Google login failed. Please try again.' : 
+               error === 'github_failed' ? 'GitHub login failed. Please try again.' : 
+               'Login failed. Please try again.');
+    return;
+  }
+
+  if (token) {
+    localStorage.setItem('sf_token', token);
+    window.location.replace('/');
+  } else {
+    // Try to fetch from the exchange endpoint as fallback
+    fetch('/auth/oauth-token', { credentials: 'include' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.token) {
+          localStorage.setItem('sf_token', data.token);
+          window.location.replace('/');
+        } else {
+          showError('No token received. Please try logging in again.');
+        }
+      })
+      .catch(function() {
+        showError('Failed to complete login. Please try again.');
+      });
+  }
+
+  function showError(msg) {
+    document.querySelector('.ring').style.display = 'none';
+    document.getElementById('msg').style.display = 'none';
+    var div = document.createElement('div');
+    div.className = 'err';
+    div.textContent = msg;
+    var btn = document.createElement('button');
+    btn.textContent = '← Back to home';
+    btn.onclick = function() { window.location.replace('/'); };
+    btn.style.cssText = 'margin-top:1rem;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#c084fc;padding:10px 24px;border-radius:40px;cursor:pointer;font-size:.82rem;';
+    document.body.appendChild(div);
+    document.body.appendChild(btn);
   }
 })();
-
-function showError(msg) {
-  document.getElementById('ring').style.display = 'none';
-  document.getElementById('msg').style.display  = 'none';
-  const div = document.createElement('div');
-  div.className = 'err';
-  div.textContent = msg;
-  const btn = document.createElement('button');
-  btn.textContent = '← Back to home';
-  btn.onclick = () => window.location.replace('/');
-  btn.style.cssText = 'margin-top:1rem;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#c084fc;padding:10px 24px;border-radius:40px;cursor:pointer;font-size:.82rem;';
-  document.body.appendChild(div);
-  document.body.appendChild(btn);
-}
 </script>
-
 </body>
 </html>
