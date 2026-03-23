@@ -1,3 +1,43 @@
+var router = require("express").Router();
+var bcrypt = require("bcryptjs");
+var jwt = require("jsonwebtoken");
+var crypto = require("crypto");
+var uuidv4 = require("uuid").v4;
+var validator = require("validator");
+var db = require("../database");
+var mailer = require("../mailer");
+
+var JWT_SECRET = process.env.JWT_SECRET;
+
+var rateLimit = require("express-rate-limit");
+var loginLimiter = rateLimit({
+  windowMs: 60000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts. Try again in a minute." }
+});
+
+function requireAuth(req, res, next) {
+  var h = req.headers.authorization || "";
+  var t = h.startsWith("Bearer ") ? h.slice(7) : null;
+  if (!t) return res.status(401).json({ error: "Not authenticated" });
+  try {
+    req.user = jwt.verify(t, JWT_SECRET);
+    next();
+  } catch (e) {
+    res.status(401).json({ error: "Session expired, please log in again" });
+  }
+}
+
+function issueToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.email, role: user.role, plan: user.plan },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
 router.post("/signup",
   function(req, res, next) { req.app.locals.limiters.signupLimiter(req, res, next); },
   async function(req, res) {
@@ -40,7 +80,7 @@ router.post("/signup",
         message: "Account created! Check your email to verify before logging in."
       });
     } catch (err) {
-      if (err.message.includes("UNIQUE")) {
+      if (err.message && err.message.includes("UNIQUE")) {
         return res.status(409).json({ error: "Email or username already taken" });
       }
       console.error("[SIGNUP]", err.message);
