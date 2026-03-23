@@ -222,7 +222,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(28px);z-index:9999;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;}
 .modal.open{display:flex;}
 .modal.vis{opacity:1;}
-.mbox{background:rgba(5,5,20,.97);border:1px solid rgba(124,58,237,.22);border-radius:26px;padding:38px;max-width:420px;width:92%;position:relative;transform:scale(.93) translateY(18px);transition:transform .4s cubic-bezier(.2,.9,.4,1.1);}
+.mbox{background:rgba(5,5,20,.97);border:1px solid rgba(124,58,237,.22);border-radius:26px;padding:38px;max-width:480px;width:92%;position:relative;transform:scale(.93) translateY(18px);transition:transform .4s cubic-bezier(.2,.9,.4,1.1);}
 .modal.vis .mbox{transform:scale(1) translateY(0);}
 .mclose{position:absolute;top:15px;right:18px;background:none;border:none;color:rgba(255,255,255,.24);font-size:1.45rem;cursor:pointer;line-height:1;transition:color .2s;}
 .mclose:hover{color:#fff;}
@@ -238,6 +238,27 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
 .sf{width:100%;padding:11px 15px;background:rgba(0,0,0,.55);border:1px solid rgba(124,58,237,.17);border-radius:13px;color:var(--v3);font-family:var(--F);font-size:.86rem;margin-bottom:11px;outline:none;cursor:pointer;}
 .crow{display:flex;gap:18px;margin-bottom:18px;}
 .crow label{display:flex;align-items:center;gap:7px;font-size:.82rem;color:rgba(255,255,255,.38);cursor:pointer;}
+.auth-tabs{display:flex;gap:8px;margin-bottom:22px;border-bottom:1px solid rgba(124,58,237,.2);}
+.auth-tab{padding:8px 0;font-size:.9rem;font-weight:700;color:rgba(255,255,255,.4);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.auth-tab.active{color:var(--v3);border-bottom-color:var(--v3);}
+.oauth-buttons{display:flex;gap:12px;margin-top:16px;margin-bottom:16px;}
+.oauth-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:40px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.oauth-btn:hover{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);}
+.divider{text-align:center;font-size:.7rem;color:rgba(255,255,255,.3);margin:16px 0;position:relative;}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:rgba(255,255,255,.1);}
+.divider::before{left:0;}.divider::after{right:0;}
+.forgot-link{text-align:right;margin-top:-5px;margin-bottom:15px;}
+.forgot-link a{font-size:.7rem;color:rgba(255,255,255,.4);text-decoration:none;}
+.forgot-link a:hover{color:var(--v3);}
+.user-menu{display:flex;align-items:center;gap:12px;}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+.user-name{font-size:.85rem;font-weight:600;}
+.logout-btn-small{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:6px 14px;border-radius:40px;font-size:.7rem;cursor:pointer;transition:all .2s;}
+.logout-btn-small:hover{background:rgba(236,72,153,.2);border-color:#ec4899;}
+.user-projects{max-height:300px;overflow-y:auto;}
+.project-item{background:rgba(0,0,0,.3);border-radius:10px;padding:10px;margin-bottom:8px;}
+.project-name{font-size:.85rem;font-weight:700;}
+.project-meta{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:4px;}
 @media(max-width:768px){
   nav{padding:0 1.2rem;} .hero{padding:100px 1.2rem 80px;}
   .tsec,.sec,.ctasec{padding-left:1.2rem;padding-right:1.2rem;}
@@ -246,6 +267,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   .h1{font-size:clamp(3rem,12vw,5rem);}
   .s3,.s4,.s6,.s8,.s9{grid-column:span 12;}
   .nav-mid,.nav-disc{display:none;}
+  .user-name{display:none;}
 }
 </style>
 </head>
@@ -276,12 +298,19 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
     <a href="#" class="jtos">Terms</a>
     <a href="#" class="jobf">Obfuscate</a>
   </div>
-  <div class="nav-r">
+  <div class="nav-r" id="nav-right">
     <a href="https://discord.gg/hq5t5XCZw" class="nav-disc" target="_blank">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.08.11 18.1.132 18.116a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
       Discord
     </a>
-    <button class="nav-cta jlogin"><span>Sign In</span></button>
+    <div id="auth-buttons">
+      <button class="nav-cta jlogin"><span>Sign In</span></button>
+    </div>
+    <div id="user-menu" style="display:none;" class="user-menu">
+      <div class="user-avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-name"></span>
+      <button class="logout-btn-small" id="logout-btn">Logout</button>
+    </div>
   </div>
 </nav>
 
@@ -299,7 +328,7 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   <p class="hero-sub">Seven interlocked protection layers, a custom VM with randomized opcodes, HWID locking and license management — the complete arsenal for enterprise Lua security.</p>
   <div class="hero-btns">
     <button class="btn btn-p jobf"><span>⚡ Obfuscate Now</span></button>
-    <button class="btn btn-g jlogin"><span>🔑 Admin Login</span></button>
+    <button class="btn btn-g jlogin"><span>🔑 Sign In</span></button>
   </div>
   <div class="scue"><div class="sline"></div><span>Scroll</span></div>
 </section>
@@ -429,46 +458,75 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   </div>
 </footer>
 
-<div class="modal" id="mLogin">
+<!-- LOGIN/SIGNUP MODAL -->
+<div class="modal" id="mAuth">
   <div class="mbox">
-    <button class="mclose" data-m="mLogin">×</button>
-    <div style="text-align:center;margin-bottom:22px;">
-      <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#ec4899);margin:0 auto 11px;display:flex;align-items:center;justify-content:center;"></div>
-      <div class="mh" style="margin-bottom:0;">Admin Access</div>
+    <button class="mclose" data-m="mAuth">×</button>
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#ec4899);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;"></div>
+      <div class="mh" style="margin-bottom:0;">Welcome</div>
     </div>
-    <input class="mf" id="lu" type="text" placeholder="Username" value="admin">
-    <input class="mf" id="lp" type="password" placeholder="Password">
-    <button class="mbtn" id="lbtn">Sign In</button>
-    <div class="merr" id="lerr"></div>
+    
+    <div class="auth-tabs">
+      <div class="auth-tab active" data-tab="login">Sign In</div>
+      <div class="auth-tab" data-tab="signup">Sign Up</div>
+    </div>
+    
+    <div id="login-form">
+      <input class="mf" id="login-email" type="email" placeholder="Email">
+      <input class="mf" id="login-password" type="password" placeholder="Password">
+      <div class="forgot-link"><a href="#" id="forgot-link">Forgot password?</a></div>
+      <button class="mbtn" id="login-submit">Sign In</button>
+    </div>
+    
+    <div id="signup-form" style="display:none;">
+      <input class="mf" id="signup-username" type="text" placeholder="Username">
+      <input class="mf" id="signup-email" type="email" placeholder="Email">
+      <input class="mf" id="signup-password" type="password" placeholder="Password (min 8 chars)">
+      <button class="mbtn" id="signup-submit">Create Account</button>
+    </div>
+    
+    <div class="divider">or continue with</div>
+    
+    <div class="oauth-buttons">
+      <button class="oauth-btn" id="google-login">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Google
+      </button>
+      <button class="oauth-btn" id="github-login">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.21.68-.48 0-.24-.01-.87-.01-1.71-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48C19.13 20.17 22 16.42 22 12c0-5.52-4.48-10-10-10z"/></svg>
+        GitHub
+      </button>
+    </div>
+    
+    <div id="auth-error" class="merr"></div>
+    <div id="auth-success" style="color:#4ade80;text-align:center;margin-top:9px;font-size:.82rem;display:none;"></div>
   </div>
 </div>
 
-<div class="modal" id="mTos">
-  <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
-    <button class="mclose" data-m="mTos">×</button>
-    <div class="mh">Terms of Service</div>
-    <p style="color:rgba(255,255,255,.26);font-family:var(--M);font-size:.65rem;margin-bottom:14px;">Last Updated: March 21, 2025</p>
-    <h3 class="tos-h">1. Acceptance</h3><p class="tos-p">By accessing SURFIX you agree to these Terms. If you do not agree, do not use the Service.</p>
-    <h3 class="tos-h">2. Permitted Use</h3><p class="tos-p">SURFIX provides Lua obfuscation and license management for legitimate protection only.</p>
-    <h3 class="tos-h">3. Prohibited Use</h3><p class="tos-p">You may not use SURFIX to protect malware, viruses, or harmful software. Violations result in immediate ban and may be reported to authorities.</p>
-    <h3 class="tos-h">4. HWID & Licensing</h3><p class="tos-p">Keys are non-transferable. Bypassing HWID locks or sharing keys results in permanent ban.</p>
-    <h3 class="tos-h">5. No Warranty</h3><p class="tos-p">Service is "as is". We do not guarantee immunity from all reverse engineering.</p>
-    <h3 class="tos-h">6. Contact</h3><p class="tos-p">Questions? <a href="https://discord.gg/hq5t5XCZw" style="color:var(--v3);">Join our Discord</a>.</p>
-    <button class="mbtn" style="margin-top:22px;" onclick="closeM('mTos')">Close</button>
+<!-- FORGOT PASSWORD MODAL -->
+<div class="modal" id="mForgot">
+  <div class="mbox">
+    <button class="mclose" data-m="mForgot">×</button>
+    <div class="mh">Reset Password</div>
+    <input class="mf" id="forgot-email" type="email" placeholder="Email address">
+    <button class="mbtn" id="forgot-submit">Send Reset Link</button>
+    <div id="forgot-error" class="merr"></div>
+    <div id="forgot-success" style="color:#4ade80;text-align:center;margin-top:9px;font-size:.82rem;display:none;"></div>
   </div>
 </div>
 
-<div class="modal" id="mPrivacy">
-  <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
-    <button class="mclose" data-m="mPrivacy">×</button>
-    <div class="mh">Privacy Policy</div>
-    <h3 class="tos-h">Data We Collect</h3><p class="tos-p">License keys, HWID data, IP addresses for rate limiting, and encrypted script data. With Source Locker enabled, we never see plaintext.</p>
-    <h3 class="tos-h">How We Use It</h3><p class="tos-p">Solely to provide the Service, enforce licensing, and prevent abuse. We never sell your data.</p>
-    <h3 class="tos-h">Security</h3><p class="tos-p">All data encrypted at rest. Passwords bcrypt-hashed. Source Locker uses AES-256-GCM with seeds that never leave your device.</p>
-    <button class="mbtn" style="margin-top:22px;" onclick="closeM('mPrivacy')">Close</button>
+<!-- USER DASHBOARD MODAL -->
+<div class="modal" id="mDashboard">
+  <div class="mbox" style="max-width:550px;">
+    <button class="mclose" data-m="mDashboard">×</button>
+    <div class="mh">My Projects</div>
+    <div id="user-projects-list" class="user-projects"></div>
+    <button class="mbtn" id="dashboard-new-project" style="margin-top:15px;">+ New Project</button>
   </div>
 </div>
 
+<!-- OBFUSCATE MODAL -->
 <div class="modal" id="mObf">
   <div class="mbox" style="max-width:530px;">
     <button class="mclose" data-m="mObf">×</button>
@@ -489,8 +547,32 @@ footer{position:relative;z-index:4;padding:34px 3rem;border-top:1px solid rgba(2
   </div>
 </div>
 
+<!-- TOS MODAL -->
+<div class="modal" id="mTos">
+  <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
+    <button class="mclose" data-m="mTos">×</button>
+    <div class="mh">Terms of Service</div>
+    <p style="color:rgba(255,255,255,.26);font-family:var(--M);font-size:.65rem;margin-bottom:14px;">Last Updated: March 22, 2025</p>
+    <h3 class="tos-h">1. Acceptance</h3><p class="tos-p">By accessing SURFIX you agree to these Terms.</p>
+    <h3 class="tos-h">2. Permitted Use</h3><p class="tos-p">SURFIX provides Lua obfuscation and license management for legitimate protection only.</p>
+    <h3 class="tos-h">3. Prohibited Use</h3><p class="tos-p">You may not use SURFIX to protect malware, viruses, or harmful software.</p>
+    <h3 class="tos-h">4. Contact</h3><p class="tos-p">Questions? <a href="https://discord.gg/hq5t5XCZw" style="color:var(--v3);">Join our Discord</a>.</p>
+    <button class="mbtn" style="margin-top:22px;" onclick="closeM('mTos')">Close</button>
+  </div>
+</div>
+
+<!-- PRIVACY MODAL -->
+<div class="modal" id="mPrivacy">
+  <div class="mbox" style="max-width:540px;max-height:84vh;overflow-y:auto;">
+    <button class="mclose" data-m="mPrivacy">×</button>
+    <div class="mh">Privacy Policy</div>
+    <p class="tos-p">We collect license keys, HWID data, IP addresses for rate limiting, and encrypted script data. With Source Locker enabled, we never see plaintext. We never sell your data.</p>
+    <button class="mbtn" style="margin-top:22px;" onclick="closeM('mPrivacy')">Close</button>
+  </div>
+</div>
+
 <script>
-// LOADER - FIXED TO ALWAYS DISAPPEAR
+// LOADER
 const MSGS=['Initializing engine…','Loading 7 protection layers…','Warming variant cache…','Ready.'];
 let pct=0; const lf=document.getElementById('lf'),ll=document.getElementById('ll');
 const li=setInterval(()=>{
@@ -506,24 +588,21 @@ const li=setInterval(()=>{
   }
 },80);
 
-// FALLBACK: Force loader to disappear after 5 seconds max
 setTimeout(function() {
   if (document.getElementById('loader') && !document.getElementById('loader').classList.contains('out')) {
     document.getElementById('loader').classList.add('out');
-    document.querySelectorAll('.ci').forEach(function(e) {
-      e.classList.add('in');
-    });
+    document.querySelectorAll('.ci').forEach(function(e) { e.classList.add('in'); });
   }
 }, 5000);
 
-// SIMPLE CURSOR (no magnetic)
+// CURSOR
 const dot=document.getElementById('dot');
 let mx=0,my=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
 document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.bc,.lb,.st'))dot.style.transform='scale(1.8)';});
 document.addEventListener('mouseout',e=>{if(e.target.closest('a,button,.bc,.lb,.st'))dot.style.transform='scale(1)';});
 
-// CANVAS BG
+// CANVAS BG (simplified)
 const bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');
 let BW,BH,stars=[];
 function resB(){BW=bgC.width=innerWidth;BH=bgC.height=innerHeight;makeStars();}
@@ -532,8 +611,6 @@ function makeStars(){
   for(let i=0;i<90;i++) stars.push({x:Math.random()*BW,y:Math.random()*BH,r:.3+Math.random()*1.4,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,a:.2+Math.random()*.55,ph:Math.random()*Math.PI*2});
 }
 resB();window.addEventListener('resize',resB);
-let bmx=BW/2,bmy=BH/2;
-document.addEventListener('mousemove',e=>{bmx=e.clientX;bmy=e.clientY;});
 function drawBg(){
   bgX.clearRect(0,0,BW,BH);
   [[.14,.18,520,'rgba(124,58,237,',0.13],[.88,.77,580,'rgba(6,182,212,',0.09],[.5,.46,320,'rgba(236,72,153,',0.055]].forEach(([xx,yy,rr,col,aa])=>{
@@ -547,24 +624,17 @@ function drawBg(){
     bgX.beginPath();bgX.arc(s.x,s.y,s.r,0,Math.PI*2);
     bgX.fillStyle=`rgba(210,200,255,${s.a+Math.sin(s.ph)*.12})`;bgX.fill();
   });
-  for(let i=0;i<stars.length;i++) for(let j=i+1;j<stars.length;j++){
-    const dx=stars[i].x-stars[j].x,dy=stars[i].y-stars[j].y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d<155){bgX.beginPath();bgX.moveTo(stars[i].x,stars[i].y);bgX.lineTo(stars[j].x,stars[j].y);bgX.strokeStyle=`rgba(124,58,237,${(1-d/155)*.07})`;bgX.lineWidth=.5;bgX.stroke();}
-  }
-  const g2=bgX.createRadialGradient(bmx,bmy,0,bmx,bmy,280);
-  g2.addColorStop(0,'rgba(124,58,237,0.06)');g2.addColorStop(1,'rgba(124,58,237,0)');
-  bgX.fillStyle=g2;bgX.fillRect(0,0,BW,BH);
   requestAnimationFrame(drawBg);
 }
 drawBg();
 
-// PARTICLES
+// PARTICLES (simplified)
 const pc=document.getElementById('particles'),px=pc.getContext('2d');
 let PW,PH,parts=[];
 function resP(){PW=pc.width=innerWidth;PH=pc.height=innerHeight;}
 resP();window.addEventListener('resize',resP);
-const CHARS=['0x','⊕','VM','XOR','{}','fn','if','&&','←','≡','//','◆'];
-const COLS=['rgba(124,58,237,','rgba(6,182,212,','rgba(168,85,247,','rgba(236,72,153,'];
+const CHARS=['0x','VM','XOR','{}','fn','if','&&','//'];
+const COLS=['rgba(124,58,237,','rgba(6,182,212,','rgba(236,72,153,'];
 let pf=0;
 function drawP(){
   px.clearRect(0,0,PW,PH);pf++;
@@ -616,7 +686,7 @@ document.addEventListener('mousemove',e=>{
   t3.style.transform=`rotateX(${((e.clientY-cy)/cy)*-5}deg) rotateY(${((e.clientX-cx)/cx)*3.5}deg)`;
 });
 
-// INTERSECTION
+// INTERSECTION OBSERVERS
 const io=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
     if(!e.isIntersecting)return;
@@ -655,28 +725,168 @@ const cio=new IntersectionObserver(entries=>{
 },{threshold:.5});
 document.querySelectorAll('.stats').forEach(e=>cio.observe(e));
 
-// MODALS
+// MODAL HELPERS
 function openM(id){const m=document.getElementById(id);m.classList.add('open');requestAnimationFrame(()=>m.classList.add('vis'));}
 function closeM(id){const m=document.getElementById(id);m.classList.remove('vis');setTimeout(()=>m.classList.remove('open'),300);}
-document.querySelectorAll('.jlogin').forEach(e=>e.addEventListener('click',()=>openM('mLogin')));
-document.querySelectorAll('.jobf').forEach(e=>e.addEventListener('click',()=>openM('mObf')));
-document.querySelectorAll('.jtos').forEach(e=>e.addEventListener('click',ev=>{ev.preventDefault();openM('mTos');}));
-document.querySelectorAll('.jprivacy').forEach(e=>e.addEventListener('click',ev=>{ev.preventDefault();openM('mPrivacy');}));
 document.querySelectorAll('.mclose').forEach(e=>e.addEventListener('click',()=>closeM(e.dataset.m)));
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);}));
 
-// LOGIN
-let tok=localStorage.getItem('surfix_token')||'';
-document.getElementById('lbtn').addEventListener('click',async()=>{
-  const u=document.getElementById('lu').value,p=document.getElementById('lp').value;
-  document.getElementById('lerr').textContent='';
-  try{
-    const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
-    const d=await r.json();
-    if(d.token){tok=d.token;localStorage.setItem('surfix_token',tok);closeM('mLogin');location.href='/dashboard';}
-    else document.getElementById('lerr').textContent=d.error||'Login failed';
-  }catch(err){document.getElementById('lerr').textContent=err.message;}
+// AUTH TABS
+document.querySelectorAll('.auth-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const tabName=tab.dataset.tab;
+    document.getElementById('login-form').style.display=tabName==='login'?'block':'none';
+    document.getElementById('signup-form').style.display=tabName==='signup'?'block':'none';
+  });
 });
+
+// AUTH STATE
+let currentUser=null;
+let userToken=localStorage.getItem('sf_token');
+
+async function checkAuth(){
+  if(!userToken) return;
+  try{
+    const res=await fetch('/api/user/me',{headers:{'Authorization':'Bearer '+userToken}});
+    if(res.ok){
+      const user=await res.json();
+      currentUser=user;
+      document.getElementById('auth-buttons').style.display='none';
+      document.getElementById('user-menu').style.display='flex';
+      document.getElementById('user-name').textContent=user.username;
+      document.getElementById('user-avatar').textContent=user.username.charAt(0).toUpperCase();
+      return true;
+    }else{
+      localStorage.removeItem('sf_token');
+      userToken=null;
+      return false;
+    }
+  }catch(e){
+    return false;
+  }
+}
+
+function logout(){
+  localStorage.removeItem('sf_token');
+  userToken=null;
+  currentUser=null;
+  document.getElementById('auth-buttons').style.display='block';
+  document.getElementById('user-menu').style.display='none';
+}
+
+document.getElementById('logout-btn')?.addEventListener('click',logout);
+
+// LOGIN
+document.getElementById('login-submit')?.addEventListener('click',async()=>{
+  const email=document.getElementById('login-email').value;
+  const password=document.getElementById('login-password').value;
+  const errDiv=document.getElementById('auth-error');
+  errDiv.textContent='';
+  try{
+    const res=await fetch('/api/user/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data=await res.json();
+    if(data.token){
+      localStorage.setItem('sf_token',data.token);
+      userToken=data.token;
+      await checkAuth();
+      closeM('mAuth');
+    }else{
+      errDiv.textContent=data.error||'Login failed';
+    }
+  }catch(e){errDiv.textContent='Network error';}
+});
+
+// SIGNUP
+document.getElementById('signup-submit')?.addEventListener('click',async()=>{
+  const username=document.getElementById('signup-username').value;
+  const email=document.getElementById('signup-email').value;
+  const password=document.getElementById('signup-password').value;
+  const errDiv=document.getElementById('auth-error');
+  const successDiv=document.getElementById('auth-success');
+  errDiv.textContent='';
+  successDiv.style.display='none';
+  if(password.length<8){errDiv.textContent='Password must be at least 8 characters';return;}
+  try{
+    const res=await fetch('/api/user/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password})});
+    const data=await res.json();
+    if(data.success){
+      successDiv.textContent='Account created! Check your email to verify.';
+      successDiv.style.display='block';
+      setTimeout(()=>{closeM('mAuth');},3000);
+    }else{
+      errDiv.textContent=data.error||'Signup failed';
+    }
+  }catch(e){errDiv.textContent='Network error';}
+});
+
+// FORGOT PASSWORD
+document.getElementById('forgot-link')?.addEventListener('click',(e)=>{
+  e.preventDefault();
+  closeM('mAuth');
+  setTimeout(()=>openM('mForgot'),200);
+});
+document.getElementById('forgot-submit')?.addEventListener('click',async()=>{
+  const email=document.getElementById('forgot-email').value;
+  const errDiv=document.getElementById('forgot-error');
+  const successDiv=document.getElementById('forgot-success');
+  errDiv.textContent='';
+  successDiv.style.display='none';
+  try{
+    const res=await fetch('/api/user/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const data=await res.json();
+    if(data.success){
+      successDiv.textContent='Reset link sent! Check your email.';
+      successDiv.style.display='block';
+      setTimeout(()=>closeM('mForgot'),2000);
+    }else{
+      errDiv.textContent=data.error||'Request failed';
+    }
+  }catch(e){errDiv.textContent='Network error';}
+});
+
+// OAUTH
+document.getElementById('google-login')?.addEventListener('click',()=>{
+  window.location.href='/auth/google';
+});
+document.getElementById('github-login')?.addEventListener('click',()=>{
+  window.location.href='/auth/github';
+});
+
+// DASHBOARD
+document.querySelectorAll('.jlogin').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(currentUser) openM('mDashboard');
+    else openM('mAuth');
+  });
+});
+
+document.getElementById('dashboard-new-project')?.addEventListener('click',()=>{
+  closeM('mDashboard');
+  setTimeout(()=>openM('mObf'),200);
+});
+
+async function loadUserProjects(){
+  if(!currentUser) return;
+  try{
+    const res=await fetch('/api/user/projects',{headers:{'Authorization':'Bearer '+userToken}});
+    const projects=await res.json();
+    const container=document.getElementById('user-projects-list');
+    if(projects.length===0){
+      container.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,.4);">No projects yet. Click "New Project" to start.</div>';
+      return;
+    }
+    container.innerHTML=projects.map(p=>`
+      <div class="project-item">
+        <div class="project-name">${escapeHtml(p.name)} v${p.version}</div>
+        <div class="project-meta">Keys: ${p.key_count||0} | Auths: ${p.total_auths||0} | ${p.protection_level}</div>
+      </div>
+    `).join('');
+  }catch(e){}
+}
+
+function escapeHtml(str){if(!str)return "";const d=document.createElement("div");d.textContent=str;return d.innerHTML;}
 
 // OBFUSCATE
 async function doObf(){
@@ -701,6 +911,27 @@ async function doObf(){
     res.innerHTML=`<p style="color:#f87171;margin-top:9px;font-size:.83rem;">Error: ${err.message}</p>`;
   }finally{btn.textContent='🚀 Obfuscate';btn.disabled=false;}
 }
+
+document.querySelectorAll('.jobf').forEach(btn=>btn.addEventListener('click',()=>openM('mObf')));
+document.querySelectorAll('.jtos').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();openM('mTos');}));
+document.querySelectorAll('.jprivacy').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();openM('mPrivacy');}));
+
+// ADMIN LOGIN (for backward compatibility)
+let adminToken=localStorage.getItem('surfix_token')||'';
+document.getElementById('lbtn')?.addEventListener('click',async()=>{
+  const u=document.getElementById('lu')?.value||'admin',p=document.getElementById('lp')?.value||'';
+  try{
+    const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(d.token){
+      localStorage.setItem('surfix_token',d.token);
+      window.location.href='/dashboard';
+    }else document.getElementById('lerr').textContent=d.error||'Login failed';
+  }catch(err){document.getElementById('lerr').textContent=err.message;}
+});
+
+// INIT
+checkAuth();
 </script>
 </body>
 </html>
