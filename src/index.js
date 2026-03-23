@@ -45,17 +45,32 @@ app.use(helmet({
 var ALLOWED_ORIGINS = [
   process.env.PUBLIC_URL,
   "http://localhost:3000",
-  "http://localhost:3001"
+  "http://localhost:3001",
+  "https://surfix.up.railway.app",
+  "https://surfix.up.railway.app/"
 ].filter(Boolean);
 
-app.use(cors({
-  origin: function(origin, cb) {
-    if (!origin) return cb(null, true);
-    if (ALLOWED_ORIGINS.some(function(o) { return origin.startsWith(o); })) return cb(null, true);
-    cb(new Error("CORS: origin not allowed"));
-  },
-  credentials: true
-}));
+if (process.env.NODE_ENV !== "production") {
+  app.use(cors({ origin: true, credentials: true }));
+} else {
+  app.use(cors({
+    origin: function(origin, cb) {
+      if (!origin) return cb(null, true);
+      var allowed = ALLOWED_ORIGINS.some(function(o) {
+        if (!o) return false;
+        var cleanOrigin = origin.replace(/\/$/, "");
+        var cleanAllowed = o.replace(/\/$/, "");
+        return cleanOrigin === cleanAllowed || cleanOrigin.endsWith(cleanAllowed);
+      });
+      if (allowed) return cb(null, true);
+      console.log("[CORS] Blocked origin:", origin);
+      cb(new Error("Origin not allowed"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
+  }));
+}
 
 app.use(compression());
 app.use(morgan(process.env.NODE_ENV === "production" ? "tiny" : "dev"));
