@@ -191,4 +191,42 @@ router.post("/reset-password", async function(req, res) {
 
     var hash = await bcrypt.hash(password, 12);
     await db.run("UPDATE users SET password = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?", [hash, user.id]);
-    res.json({ success: true, message: "
+    res.json({ success: true, message: "Password updated. You can now log in." });
+  } catch (err) {
+    console.error("[RESET-PW]", err.message);
+    res.status(500).json({ error: "Reset failed" });
+  }
+});
+
+router.get("/me", requireAuth, async function(req, res) {
+  try {
+    var user = await db.get(
+      "SELECT id, username, email, role, plan, avatar_url, created_at, last_login FROM users WHERE id = ?",
+      [req.user.id]
+    );
+    if (!user) return res.status(404).json({ error: "User not found" });
+    var providers = await db.all("SELECT provider FROM oauth_accounts WHERE user_id = ?", [user.id]);
+    var result = Object.assign({}, user, { providers: providers.map(function(p) { return p.provider; }) });
+    res.json(result);
+  } catch (err) {
+    console.error("[ME]", err.message);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+router.get("/projects", requireAuth, async function(req, res) {
+  try {
+    var projects = await db.all(
+      "SELECT p.id, p.name, p.description, p.version, p.protection_level, p.lightning, p.silent, p.ffa, p.heartbeat, p.obfuscate, p.source_locker, p.downloads, p.created_at, p.updated_at, (SELECT COUNT(*) FROM licenses l WHERE l.project_id = p.id) as key_count, (SELECT COUNT(*) FROM auth_logs a WHERE a.project_id = p.id) as total_auths FROM projects p WHERE p.user_id = ? ORDER BY p.created_at DESC",
+      [req.user.id]
+    );
+    res.json(projects);
+  } catch (err) {
+    console.error("[USER-PROJECTS]", err.message);
+    res.status(500).json({ error: "Failed to load projects" });
+  }
+});
+
+module.exports = router;
+module.exports.requireAuth = requireAuth;
+module.exports.issueToken = issueToken;
