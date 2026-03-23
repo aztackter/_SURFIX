@@ -1,9 +1,104 @@
+var sqlite3 = require("sqlite3").verbose();
+var path = require("path");
+var fs = require("fs");
+var bcrypt = require("bcryptjs");
+var crypto = require("crypto");
+
+var JWT_SECRET = process.env.JWT_SECRET || "";
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error("[FATAL] JWT_SECRET is missing or too short (min 32 chars).");
+  process.exit(1);
+}
+
+process.env.LOADER_SECRET = process.env.LOADER_SECRET ||
+  crypto.createHmac("sha256", JWT_SECRET).update("loader").digest("hex");
+process.env.SESSION_SECRET = process.env.SESSION_SECRET ||
+  crypto.createHmac("sha256", JWT_SECRET).update("session").digest("hex");
+
+if (process.env.NODE_ENV === "production") {
+  var ap = process.env.ADMIN_PASSWORD || "";
+  if (!ap || ap === "admin123" || ap.startsWith("CHANGE_ME")) {
+    console.error("[FATAL] ADMIN_PASSWORD must be changed from default in production.");
+    process.exit(1);
+  }
+}
+
+var DATA_DIR =
+  process.env.RAILWAY_VOLUME_MOUNT_PATH ||
+  process.env.DATA_DIR ||
+  path.join(__dirname, "../data");
+
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+var db = new sqlite3.Database(path.join(DATA_DIR, "surfix.db"));
+
+db.on("error", function(err) {
+  if (err && err.message && (
+    err.message.includes("_users_old_rebuild") ||
+    err.message.includes("no such table")
+  )) return;
+  console.error("[DB] error:", err.message);
+});
+
+var _dbReady = false;
+var _readyQ = [];
+
+function onReady(fn) {
+  if (_dbReady) return fn();
+  _readyQ.push(fn);
+}
+
+function _markReady() {
+  _dbReady = true;
+  for (var i = 0; i < _readyQ.length; i++) {
+    _readyQ[i]();
+  }
+  _readyQ = [];
+}
+
+function execSQL(sql) {
+  return new Promise(function(resolve, reject) {
+    db.exec(sql, function(err) {
+      if (err && !err.message.includes("already exists") && !err.message.includes("duplicate column") && !err.message.includes("no such table")) {
+        console.warn("[DB exec]", sql.slice(0, 60), err.message);
+      }
+      resolve();
+    });
+  });
+}
+
+function get(sql, params) {
+  return new Promise(function(resolve, reject) {
+    db.get(sql, params || [], function(err, row) {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
+function all(sql, params) {
+  return new Promise(function(resolve, reject) {
+    db.all(sql, params || [], function(err, rows) {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+function run(sql, params) {
+  return new Promise(function(resolve, reject) {
+    db.run(sql, params || [], function(err) {
+      if (err) reject(err);
+      else resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+}
+
 async function setup() {
   await execSQL("PRAGMA journal_mode = WAL");
   await execSQL("PRAGMA foreign_keys = OFF");
   await execSQL("PRAGMA synchronous = NORMAL");
 
-  // Create users table if not exists
   await execSQL(`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE,
@@ -21,7 +116,6 @@ async function setup() {
     last_login INTEGER
   )`);
 
-  // Create other tables
   await execSQL(`CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
     user_id TEXT,
@@ -90,7 +184,6 @@ async function setup() {
     UNIQUE(provider, provider_id)
   )`);
 
-  // Add missing columns (safe to run even if they exist)
   var migrations = [
     "ALTER TABLE users ADD COLUMN email TEXT",
     "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'",
@@ -108,7 +201,7 @@ async function setup() {
     try {
       await execSQL(migrations[i]);
     } catch (e) {
-      // Column already exists - ignore
+      // Column already exists
     }
   }
 
@@ -140,3 +233,15 @@ async function setup() {
   _markReady();
   console.log("[DB] Ready.");
 }
+
+setup().catch(function(err) {
+  console.error("[DB] Setup failed:", err.message);
+  process.exit(1);
+});
+
+module.exports = {
+  get: get,
+  all: all,
+  run: run,
+  onReady: onReady
+};
