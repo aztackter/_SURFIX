@@ -38,6 +38,12 @@ function issueToken(user) {
   );
 }
 
+function genKey() {
+  return Array.from({ length: 5 }, function() {
+    return crypto.randomBytes(3).toString("hex").toUpperCase();
+  }).join("-");
+}
+
 router.post("/signup",
   function(req, res, next) { req.app.locals.limiters.signupLimiter(req, res, next); },
   async function(req, res) {
@@ -157,6 +163,115 @@ router.get("/projects", requireAuth, async function(req, res) {
   } catch (err) {
     console.error("[USER-PROJECTS]", err.message);
     res.status(500).json({ error: "Failed to load projects" });
+  }
+});
+
+router.post("/projects", requireAuth, async function(req, res) {
+  var body = req.body || {};
+  var name = body.name;
+  var script = body.script;
+  if (!name || !script) return res.status(400).json({ error: "name and script required" });
+
+  var id = uuidv4();
+  var finalScript = script;
+
+  try {
+    await db.run(
+      "INSERT INTO projects (id, user_id, name, description, script, version, script_version, protection_level, lightning, silent, ffa, obfuscate) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)",
+      [id, req.user.id, name, body.description || "", finalScript, body.version || "1.0.0",
+       body.protection_level || "max", body.lightning ? 1 : 0, body.silent ? 1 : 0,
+       body.ffa ? 1 : 0, body.obfuscate !== undefined ? (body.obfuscate ? 1 : 0) : 1]
+    );
+    var proj = await db.get("SELECT * FROM projects WHERE id = ?", [id]);
+    res.json(proj);
+  } catch (err) {
+    console.error("[USER CREATE PROJECT]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/projects/:id", requireAuth, async function(req, res) {
+  var body = req.body || {};
+  try {
+    var p = await db.get("SELECT * FROM projects WHERE user_id = ? AND id = ?", [req.user.id, req.params.id]);
+    if (!p) return res.status(404).json({ error: "Project not found" });
+
+    var finalScript = body.script !== undefined ? body.script : null;
+    var versionBumped = finalScript !== null;
+
+    var updates = [];
+    var values = [];
+    if (body.name !== undefined)             { updates.push("name = ?");             values.push(body.name); }
+    if (body.description !== undefined)      { updates.push("description = ?");      values.push(body.description); }
+    if (finalScript !== null)                { updates.push("script = ?");           values.push(finalScript); }
+    if (body.version !== undefined)          { updates.push("version = ?");          values.push(body.version); }
+    if (body.protection_level !== undefined) { updates.push("protection_level = ?"); values.push(body.protection_level); }
+    if (body.lightning !== undefined)        { updates.push("lightning = ?");        values.push(body.lightning ? 1 : 0); }
+    if (body.silent !== undefined)           { updates.push("silent = ?");           values.push(body.silent ? 1 : 0); }
+    if (body.ffa !== undefined)              { updates.push("ffa = ?");              values.push(body.ffa ? 1 : 0); }
+    if (body.obfuscate !== undefined)        { updates.push("obfuscate = ?");        values.push(body.obfuscate ? 1 : 0); }
+    if (versionBumped) updates.push("script_version = script_version + 1");
+    updates.push("updated_at = strftime('%s','now')");
+    values.push(req.params.id);
+
+    if (updates.length > 0) {
+      await db.run("UPDATE projects SET " + updates.join(", ") + " WHERE id = ? AND user_id = ?", values.concat([req.user.id]));
+    }
+
+    var updated = await db.get("SELECT * FROM projects WHERE id = ?", [req.params.id]);
+    res.json(updated);
+  } catch (err) {
+    console.error("[USER UPDATE PROJECT]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/projects/:id", requireAuth, async function(req, res) {
+  try {
+    await db.run("DELETE FROM projects WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[USER DELETE PROJECT]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/projects/:id/keys", requireAuth, async function(req, res) {
+  try {
+    var keys = await db.all(
+      "SELECT l.* FROM licenses l JOIN projects p ON l.project_id = p.id WHERE p.user_id = ? AND l.project_id = ? ORDER BY l.created_at DESC",
+      [req.user.id, req.params.id]
+    );
+    res.json(keys);
+  } catch (err) {
+    console.error("[USER PROJECT KEYS]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/projects/:id/keys", requireAuth, async function(req, res) {
+  try {
+    var proj = await db.get("SELECT id FROM projects WHERE id = ? AND user_id = ?", [req.params.id, req.user.id]);
+    if (!proj) return res.status(404).json({ error: "Project not found" });
+    
+    var body = req.body || {};
+    var count = Math.min(Math.max(1, Number(body.count) || 1), 500);
+    var expires_at = body.expires_in_days ? Math.floor(Date.now() / 1000) + Number(body.expires_in_days) * 86400 : null;
+    var generated = [];
+    
+    for (var i = 0; i < count; i++) {
+      var id = uuidv4();
+      var key = genKey();
+      await db.run(
+        "INSERT INTO licenses (id, project_id, key_value, max_activations, expires_at, note) VALUES (?, ?, ?, ?, ?, ?)",
+        [id, req.params.id, key, body.max_activations || null, expires_at, body.note || ""]
+      );
+      generated.push({ id: id, key: key, expires_at: expires_at });
+    }
+    res.json(generated);
+  } catch (err) {
+    console.error("[USER GENERATE KEYS]", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
