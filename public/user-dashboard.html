@@ -33,6 +33,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      cursor: pointer;
     }
     .logo-mark {
       width: 38px;
@@ -48,6 +49,7 @@
       display: flex;
       align-items: center;
       gap: 15px;
+      cursor: pointer;
     }
     .user-avatar {
       width: 40px;
@@ -130,6 +132,14 @@
       background: rgba(124,58,237,0.4);
       border-color: #7c3aed;
     }
+    .btn-danger {
+      background: rgba(236,72,153,0.2);
+      border-color: rgba(236,72,153,0.3);
+    }
+    .btn-danger:hover {
+      background: rgba(236,72,153,0.4);
+      border-color: #ec4899;
+    }
     .loading {
       text-align: center;
       padding: 2rem;
@@ -189,22 +199,31 @@
       justify-content: flex-end;
       margin-top: 1rem;
     }
+    .keys-result {
+      margin-top: 1rem;
+    }
+    .keys-result textarea {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: #4ade80;
+    }
     @media (max-width: 768px) {
       body { padding: 1rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <div class="logo">
+    <div class="logo" onclick="location.reload()">
       <div class="logo-mark"></div>
       <span class="logo-name">SURFIX</span>
     </div>
-    <div class="user-info">
+    <div class="user-info" id="user-info" style="cursor:pointer;">
       <div class="user-avatar" id="userAvatar"></div>
       <span id="userName"></span>
-      <button class="logout-btn" onclick="logout()">Sign Out</button>
+      <button class="logout-btn" id="logout-btn" style="margin-left:10px;">Sign Out</button>
     </div>
   </div>
 
@@ -212,7 +231,7 @@
     <div class="card">
       <div class="card-header">
         <h2>My Projects</h2>
-        <button onclick="showCreateProject()">+ New Project</button>
+        <button id="newProjectBtn">+ New Project</button>
       </div>
       <div id="projectsList"><div class="loading">Loading projects...</div></div>
     </div>
@@ -236,7 +255,7 @@
     <label><input type="checkbox" id="projectObfuscate" checked> 🔒 Enable Obfuscation</label>
     <textarea id="projectScript" rows="8" placeholder="-- Paste your Lua script here&#10;print('Hello, World!')"></textarea>
     <div class="modal-buttons">
-      <button onclick="closeModal()">Cancel</button>
+      <button onclick="closeProjectModal()">Cancel</button>
       <button onclick="saveProject()">Save</button>
     </div>
   </div>
@@ -310,22 +329,26 @@
   async function loadProjects() {
     try {
       const projects = await api("GET", "/api/user/projects");
-      document.getElementById("projectsList").innerHTML = projects.map(p => `
-        <div class="project-item">
-          <div class="project-name">${escapeHtml(p.name)} v${p.version}</div>
-          <div class="project-meta">
-            Keys: ${p.key_count || 0} | Auths: ${p.total_auths || 0} | Level: ${p.protection_level}
-            ${p.lightning ? ' | ⚡ Lightning' : ''}${p.silent ? ' | 🔇 Silent' : ''}${p.ffa ? ' | 🎯 FFA' : ''}${p.obfuscate === 0 ? ' | 📄 No Obfuscation' : ' | 🔒 Obfuscated'}
-          </div>
-          <div class="project-actions">
-            <button onclick="editProject('${p.id}')">Edit</button>
-            <button onclick="showGenerateKeys('${p.id}')">Generate Keys</button>
-            <button onclick="viewKeys('${p.id}')">View Keys</button>
-            <button onclick="showLoaderUrl('${p.id}')">Copy URL</button>
-            <button class="btn-danger" onclick="deleteProject('${p.id}')">Delete</button>
-          </div>
-        </div>
-      `).join("") || "<div class='loading'>No projects yet. Click 'New Project' to get started.</div>";
+      const container = document.getElementById("projectsList");
+      if (projects.length === 0) {
+        container.innerHTML = '<div class="loading">No projects yet. Click "New Project" to get started.</div>';
+        return;
+      }
+      container.innerHTML = projects.map(function(p) {
+        return '<div class="project-item">' +
+          '<div class="project-name">' + escapeHtml(p.name) + ' v' + p.version + '</div>' +
+          '<div class="project-meta">Keys: ' + (p.key_count || 0) + ' | Auths: ' + (p.total_auths || 0) + ' | Level: ' + p.protection_level +
+          (p.lightning ? ' | ⚡ Lightning' : '') + (p.silent ? ' | 🔇 Silent' : '') + (p.ffa ? ' | 🎯 FFA' : '') + (p.obfuscate === 0 ? ' | 📄 No Obfuscation' : ' | 🔒 Obfuscated') +
+          '</div>' +
+          '<div class="project-actions">' +
+          '<button onclick="editProject(\'' + p.id + '\')">Edit</button>' +
+          '<button onclick="showGenerateKeys(\'' + p.id + '\')">Generate Keys</button>' +
+          '<button onclick="viewKeys(\'' + p.id + '\')">View Keys</button>' +
+          '<button onclick="showLoaderUrl(\'' + p.id + '\')">Copy URL</button>' +
+          '<button class="btn-danger" onclick="deleteProject(\'' + p.id + '\')">Delete</button>' +
+          '</div>' +
+          '</div>';
+      }).join("");
     } catch (err) {
       console.error("Failed to load projects:", err);
       document.getElementById("projectsList").innerHTML = "<div class='loading'>Error loading projects. Please refresh.</div>";
@@ -334,12 +357,12 @@
 
   function escapeHtml(str) {
     if (!str) return "";
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    var d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
   }
 
-  function showCreateProject() {
+  function openProjectModal() {
     document.getElementById("modalTitle").textContent = "New Project";
     document.getElementById("editProjectId").value = "";
     document.getElementById("projectName").value = "";
@@ -353,10 +376,14 @@
     document.getElementById("projectModal").classList.add("open");
   }
 
-  async function editProject(id) {
+  function closeProjectModal() {
+    document.getElementById("projectModal").classList.remove("open");
+  }
+
+  window.editProject = async function(id) {
     try {
       const projects = await api("GET", "/api/user/projects");
-      const p = projects.find(p => p.id === id);
+      const p = projects.find(function(p) { return p.id === id; });
       if (!p) return;
       document.getElementById("modalTitle").textContent = "Edit Project";
       document.getElementById("editProjectId").value = p.id;
@@ -372,9 +399,9 @@
     } catch (err) {
       alert("Error loading project: " + err.message);
     }
-  }
+  };
 
-  async function saveProject() {
+  window.saveProject = async function() {
     const id = document.getElementById("editProjectId").value;
     const data = {
       name: document.getElementById("projectName").value.trim(),
@@ -393,23 +420,19 @@
     }
     
     try {
-      const url = id ? `/api/user/projects/${id}` : "/api/user/projects";
+      const url = id ? "/api/user/projects/" + id : "/api/user/projects";
       const method = id ? "PUT" : "POST";
       await api(method, url, data);
-      closeModal();
+      closeProjectModal();
       loadProjects();
     } catch (err) {
       alert("Error saving project: " + err.message);
     }
-  }
-
-  function closeModal() {
-    document.getElementById("projectModal").classList.remove("open");
-  }
+  };
 
   let currentProjectId = null;
 
-  function showGenerateKeys(projectId) {
+  window.showGenerateKeys = function(projectId) {
     currentProjectId = projectId;
     document.getElementById("keysProjectId").value = projectId;
     document.getElementById("keyCount").value = "1";
@@ -418,13 +441,13 @@
     document.getElementById("keyNote").value = "";
     document.getElementById("keysResult").innerHTML = "";
     document.getElementById("keysModal").classList.add("open");
-  }
+  };
 
   function closeKeysModal() {
     document.getElementById("keysModal").classList.remove("open");
   }
 
-  async function generateKeys() {
+  window.generateKeys = async function() {
     const projectId = document.getElementById("keysProjectId").value;
     const count = parseInt(document.getElementById("keyCount").value) || 1;
     const expires_in_days = document.getElementById("keyExpiry").value ? parseInt(document.getElementById("keyExpiry").value) : undefined;
@@ -432,68 +455,72 @@
     const note = document.getElementById("keyNote").value;
     
     try {
-      const keys = await api("POST", `/api/user/projects/${projectId}/keys`, { count, expires_in_days, max_activations, note });
-      document.getElementById("keysResult").innerHTML = `
-        <div style="margin-top: 1rem;">
-          <strong style="color: #4ade80;">✓ Generated ${keys.length} key(s)</strong>
-          <textarea rows="5" style="width:100%; margin-top:0.5rem; background:#000; border:1px solid #333; color:#4ade80; padding:0.5rem; font-family:monospace; font-size:0.75rem;" readonly>${keys.map(k => k.key).join("\n")}</textarea>
-          <button onclick="copyKeys()" style="margin-top:0.5rem; width:100%;">Copy All</button>
-        </div>
-      `;
+      const keys = await api("POST", "/api/user/projects/" + projectId + "/keys", { count: count, expires_in_days: expires_in_days, max_activations: max_activations, note: note });
+      document.getElementById("keysResult").innerHTML = '<div style="margin-top: 1rem;">' +
+        '<strong style="color: #4ade80;">✓ Generated ' + keys.length + ' key(s)</strong>' +
+        '<textarea rows="5" style="width:100%; margin-top:0.5rem; background:#000; border:1px solid #333; color:#4ade80; padding:0.5rem; font-family:monospace; font-size:0.75rem;" readonly>' + keys.map(function(k) { return k.key; }).join("\n") + '</textarea>' +
+        '<button onclick="copyKeys()" style="margin-top:0.5rem; width:100%;">Copy All</button>' +
+        '</div>';
     } catch (err) {
       alert("Error generating keys: " + err.message);
     }
-  }
+  };
 
-  function copyKeys() {
-    const ta = document.querySelector("#keysResult textarea");
+  window.copyKeys = function() {
+    var ta = document.querySelector("#keysResult textarea");
     if (ta) { ta.select(); document.execCommand("copy"); alert("Copied to clipboard!"); }
-  }
+  };
 
-  async function viewKeys(projectId) {
+  window.viewKeys = async function(projectId) {
     try {
-      const keys = await api("GET", `/api/user/projects/${projectId}/keys`);
+      const keys = await api("GET", "/api/user/projects/" + projectId + "/keys");
       if (keys.length === 0) {
         alert("No keys for this project");
       } else {
-        alert(keys.map(k => `${k.key_value} (${k.activations}/${k.max_activations || "∞"} uses, HWID: ${k.hwid || "free"})`).join("\n"));
+        alert(keys.map(function(k) { return k.key_value + " (" + k.activations + "/" + (k.max_activations || "∞") + " uses, HWID: " + (k.hwid || "free") + ")"; }).join("\n"));
       }
     } catch (err) {
       alert("Error loading keys: " + err.message);
     }
-  }
+  };
 
-  function showLoaderUrl(projectId) {
-    const url = `${window.location.origin}/api/loader/${projectId}.lua`;
+  window.showLoaderUrl = function(projectId) {
+    var url = window.location.origin + "/api/loader/" + projectId + ".lua";
     document.getElementById("loaderUrlDisplay").textContent = url;
     document.getElementById("loaderModal").classList.add("open");
-  }
+  };
 
   function closeLoaderModal() {
     document.getElementById("loaderModal").classList.remove("open");
   }
 
-  function copyLoaderUrl() {
-    const url = document.getElementById("loaderUrlDisplay").textContent;
+  window.copyLoaderUrl = function() {
+    var url = document.getElementById("loaderUrlDisplay").textContent;
     navigator.clipboard.writeText(url);
     alert("Loader URL copied to clipboard!");
-  }
+  };
 
-  async function deleteProject(id) {
+  window.deleteProject = async function(id) {
     if (confirm("Delete this project and ALL its keys? This cannot be undone.")) {
       try {
-        await api("DELETE", `/api/user/projects/${id}`);
+        await api("DELETE", "/api/user/projects/" + id);
         loadProjects();
       } catch (err) {
         alert("Error deleting project: " + err.message);
       }
     }
-  }
+  };
 
   function logout() {
     localStorage.removeItem("sf_token");
     window.location.href = "/";
   }
+
+  document.getElementById("logout-btn").addEventListener("click", logout);
+  document.getElementById("newProjectBtn").addEventListener("click", openProjectModal);
+  document.getElementById("user-info").addEventListener("click", function() {
+    location.reload();
+  });
 
   async function init() {
     await loadUser();
