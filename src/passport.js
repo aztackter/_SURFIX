@@ -97,8 +97,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: googleCallback
+    callbackURL: googleCallback,
+    scope: ["profile", "email"]
   }, function(accessToken, refreshToken, profile, done) {
+    console.log("[PASSPORT] Google profile:", profile.id);
     findOrCreateOAuthUser("google", profile.id, profile)
       .then(function(user) { done(null, user); })
       .catch(function(err) {
@@ -120,6 +122,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
     callbackURL: githubCallback,
     scope: ["user:email"]
   }, function(accessToken, refreshToken, profile, done) {
+    console.log("[PASSPORT] GitHub profile:", profile.id);
     findOrCreateOAuthUser("github", profile.id, profile)
       .then(function(user) { done(null, user); })
       .catch(function(err) {
