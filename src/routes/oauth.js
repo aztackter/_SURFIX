@@ -11,40 +11,28 @@ function issueAndRedirect(req, res, user) {
     JWT_SECRET,
     { expiresIn: "7d" }
   );
-  res.cookie("sf_oauth_token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 2 * 60 * 1000,
-    path: "/auth/oauth-token"
-  });
-  res.redirect("/oauth-success");
+  // Store token in localStorage via redirect
+  res.redirect("/oauth-success?token=" + encodeURIComponent(token));
 }
-
-router.get("/oauth-token", function(req, res) {
-  var token = req.cookies && req.cookies.sf_oauth_token;
-  if (!token) return res.status(400).json({ error: "No OAuth session found." });
-  try {
-    jwt.verify(token, JWT_SECRET);
-  } catch (e) {
-    res.clearCookie("sf_oauth_token", { path: "/auth/oauth-token" });
-    return res.status(401).json({ error: "OAuth session expired." });
-  }
-  res.clearCookie("sf_oauth_token", { path: "/auth/oauth-token" });
-  res.json({ token: token });
-});
 
 function requireStrategy(name) {
   return function(req, res, next) {
-    try { passport._strategy(name); next(); }
-    catch (e) { res.status(503).json({ error: name + " login is not configured." }); }
+    try { 
+      passport._strategy(name); 
+      next(); 
+    } catch (e) { 
+      console.error("[OAUTH] Strategy not configured:", name);
+      res.status(503).json({ error: name + " login is not configured." }); 
+    }
   };
 }
 
+// Google OAuth
 router.get("/google",
   requireStrategy("google"),
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
+
 router.get("/google/callback",
   requireStrategy("google"),
   function(req, res, next) {
@@ -59,10 +47,12 @@ router.get("/google/callback",
   }
 );
 
+// GitHub OAuth
 router.get("/github",
   requireStrategy("github"),
   passport.authenticate("github", { scope: ["user:email"] })
 );
+
 router.get("/github/callback",
   requireStrategy("github"),
   function(req, res, next) {
@@ -76,5 +66,12 @@ router.get("/github/callback",
     })(req, res, next);
   }
 );
+
+// Token exchange endpoint
+router.get("/oauth-token", function(req, res) {
+  var token = req.query.token;
+  if (!token) return res.status(400).json({ error: "No token provided" });
+  res.json({ token: token });
+});
 
 module.exports = router;
