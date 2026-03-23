@@ -1,6 +1,5 @@
 require("dotenv").config();
 var db = require("./database");
-var onReady = db.onReady;
 
 var express = require("express");
 var helmet = require("helmet");
@@ -143,8 +142,16 @@ app.use(function(err, req, res, next) {
 });
 
 var PORT = process.env.PORT || 3000;
-onReady(function() {
+
+function startServer() {
   app.listen(PORT, function() {
     console.log("[SURFIX] Listening on :" + PORT);
   });
-});
+}
+
+if (db.onReady && typeof db.onReady === "function") {
+  db.onReady(startServer);
+} else {
+  console.error("[SURFIX] Database onReady not available, starting anyway");
+  startServer();
+}
