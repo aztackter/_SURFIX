@@ -122,6 +122,10 @@ app.get("/dashboard", function(req, res) {
   res.sendFile(path.join(__dirname, "../public/dashboard.html"));
 });
 
+app.get("/user-dashboard", function(req, res) {
+  res.sendFile(path.join(__dirname, "../public/user-dashboard.html"));
+});
+
 app.get(["/", "/oauth-success", "/reset-password"], function(req, res) {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
